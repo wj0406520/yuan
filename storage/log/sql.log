@@ -1,0 +1,60 @@
+URL  admin.index.index
+Time Fri, 15 Jun 2018 09:50:24 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 09:50:35 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 14:31:05 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 14:31:06 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 14:38:48 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 14:38:48 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 14:44:24 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 14:49:54 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 14:49:55 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 14:50:24 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Fri, 15 Jun 2018 15:19:56 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Sat, 16 Jun 2018 14:05:13 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Sat, 16 Jun 2018 14:29:43 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Sat, 16 Jun 2018 14:29:58 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+
+URL  admin.index.index
+Time Sat, 16 Jun 2018 14:31:58 +0800
+SELECT j_user.id as user_id,j_user.token,j_user.user_name,'sade' as zz,j_plan.id as plan_id,j_plan.create_at,j_plan.type_id FROM j_user as j_user INNER JOIN j_plan ON j_plan.user_id=j_user.id WHERE (j_user.id < ? ) AND j_plan.id < ?  ORDER BY j_plan.id DESC --> 3 , 3
+

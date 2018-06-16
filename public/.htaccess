@@ -1,0 +1,14 @@
+Options +FollowSymLinks
+IndexIgnore */*
+RewriteEngine on
+
+#min
+RewriteRule res/j/([0-9]*)/(.*)$ miniTool/?b=site/js&f=$2&version=$1
+RewriteRule res/c/([0-9]*)/(.*)$ miniTool/?b=site/css&f=$2&version=$1
+
+# if a directory or a file exists, use it directly
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# otherwise forward it to index.php
+RewriteRule . index.php

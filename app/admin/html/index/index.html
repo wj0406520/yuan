@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title><?php echo $this->route('title');?></title>
+</head>
+<body>
+22
+<table>
+<?php foreach($views->getForm('wang') as $value){; ?>
+<tr>
+<td><?php echo $value['name'];?></td><td><?php echo $value['html'];?></td><td><?php echo $value['form_name']?></td>
+</tr>
+<?php }?>
+</table>
+
+
+
+<table>
+<?php foreach($views->getForm('wang') as $value){; ?>
+<tr>
+<td><?php echo $value['name'];?></td><td><?php echo $value['html'];?></td><td><?php echo $value['form_name']?></td>
+</tr>
+<?php }?>
+</table>
+
+
+<?php echo $this->route('form');?>
+<?php echo $views->getPage()?>
+</body>
+</html>
