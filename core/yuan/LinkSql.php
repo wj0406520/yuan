@@ -78,14 +78,8 @@ class LinkSql
     多次的数组条件表达式会最终合并，但字符串条件则只支持一次。
 
     parms $m 1级数组 条件拼接$this->where(['b'=>1,'legs'=>['>', 100]])
-                        EQ  等于（=）
-                        NEQ 不等于（<>）
-                        GT  大于（>）
-                        EGT 大于等于（>=）
-                        LT  小于（<）
-                        ELT 小于等于（<=）
-                        LIKE    模糊查询
-                        [NOT] IN    （不在）IN 查询
+                        like LIKE    模糊查询
+                        noin NOT IN    （不在）IN 查询
                         in    IN 查询
                         finset   find_in_set 查询
     return bool
@@ -100,22 +94,22 @@ class LinkSql
             $this->error('where parms is not array');
         }
         foreach ($m as $key => $value) {
-        	$boolean = true;
+            $boolean = true;
             $key = $this->db_name . $key;
             // $this->checkField($key, '10002');
             if (is_array($value)) {
-            	$str = $value[1];
+                $str = $value[1];
                 switch ($value[0]) {
                     case 'like':
                         $arr[] = $key . ' LIKE ?';
                         break;
                     case 'noin':
-                    	$boolean = false;
+                        $boolean = false;
                         $v = $this->linkString($str);
                         $arr[] = $key . ' NOT IN (' . $v . ')';
                         break;
                     case 'in':
-                    	$boolean = false;
+                        $boolean = false;
                         $v = $this->linkString($str);
                         $arr[] = $key . ' IN (' . $v . ')';
                         break;
@@ -127,7 +121,7 @@ class LinkSql
                         $arr[] = $key .' '. $value[0] . ' ? ' ;
                 }
             }else{
-            	$str = $value;
+                $str = $value;
                 $arr[] = $key . ' = ?';
             }
             $boolean && $this->bind_param['where'][] = $str;
@@ -198,8 +192,8 @@ class LinkSql
     */
     public function orderDesc($order)
     {
-    	$this->order($order,'DESC');
-    	return $this;
+        $this->order($order,'DESC');
+        return $this;
     }
 
     /*
@@ -210,8 +204,8 @@ class LinkSql
     */
     public function orderAsc($order)
     {
-    	$this->order($order,'ASC');
-    	return $this;
+        $this->order($order,'ASC');
+        return $this;
     }
 
     /*
@@ -270,7 +264,6 @@ class LinkSql
 
     $this->field('username,max(score)')->group('user_id')->having('count(test_time)>3')->select();
     SELECT username,max(score) FROM think_score GROUP BY user_id HAVING count(test_time)>3
-
     */
     public function having($having)
     {
@@ -278,16 +271,28 @@ class LinkSql
         return $this;
     }
 
+    /**
+     * parms $models 模型名称（User::class）
+     * 当前模型和参数模型左连接
+     */
     public function leftJoin($models)
     {
         $this->joinLink($models,'LEFT');
         return $this;
     }
+    /**
+     * parms $models 模型名称（User::class）
+     * 当前模型和参数模型右连接
+     */
     public function rightJoin($models)
     {
         $this->joinLink($models,'RIGHT');
         return $this;
     }
+    /**
+     * parms $models 模型名称（User::class）
+     * 当前模型和参数模型全连接
+     */
     public function join($models)
     {
         $this->joinLink($models);
@@ -343,7 +348,7 @@ class LinkSql
     如果不存在主键数据新增数据
     独立使用不支持连贯操作
     $data
-    return bool
+    return bool|create_id
     */
     public function create()
     {
@@ -528,26 +533,17 @@ class LinkSql
 
     /*
     连接语句
-
         $where = [
             'id'=>['>',30]
         ];
         $where1 = [
             'id'=>['<',5]
         ];
-
         $id = $models
-        ->table('admin')
-        ->field('id,name')
-        ->where($where)
+        ->table('admin')->field('id,name')->where($where)
         ->union()
-        ->field('id,name')
-        ->where($where1)
-        ->union()
-        ->orderDesc('id')
-        ->limit(5)
+        ->field('id,name')->where($where1)->union()->orderDesc('id')->limit(5)
         ->unionSelect();
-
     */
     public function union()
     {
@@ -558,7 +554,7 @@ class LinkSql
     }
     /*
     查询数据
-    return bool
+    return array
     */
     public function unionSelect()
     {
@@ -625,11 +621,8 @@ class LinkSql
     public function query($sql)
     {
         $rs = $this->db->query($sql);
-        if ($rs) {
-            return true;
-        }else{
-            return false;
-        }
+
+        return $rs?true:false;
     }
 
     // 判断array field是否正确
@@ -669,7 +662,7 @@ class LinkSql
     */
     private function linkWhere($arr, $aoo)
     {
-    	$aoo = ($aoo=='AND')?'AND':'OR';
+        $aoo = ($aoo=='AND')?'AND':'OR';
         $str=implode(' ' . $aoo . ' ', $arr);
 
         // var_dump($this->where);
@@ -689,7 +682,7 @@ class LinkSql
     private function linkString($data)
     {
         $arr = explode(',',$data);
-    	$this->bind_param['where'] = array_merge($this->bind_param['where'],$arr);
+        $this->bind_param['where'] = array_merge($this->bind_param['where'],$arr);
         // $str=implode(',',$arr);
         $str = substr(str_repeat('?,',count($arr)),0,-1);
         return $str;
