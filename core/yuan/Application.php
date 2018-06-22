@@ -25,8 +25,8 @@ class Application
 
 	public static function init()
 	{
-	    if(USE_COMPOSER){
-	    	require(VENDOR.'autoload.php');
+	    if(USE_COMPOSER && is_file($file = VENDOR.'autoload.php')){
+	    	require($file);
 	    }
     	// error_reporting(E_ALL);
     	// ini_set("display_errors", "On");
