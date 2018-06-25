@@ -51,6 +51,7 @@ class Models
     public function setAutoTime($bool = 0)
     {
         $this->auto_time = $bool;
+        return $this;
     }
 
     public static function init()

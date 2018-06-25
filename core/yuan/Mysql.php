@@ -107,7 +107,7 @@ class Mysql{
         //如果sql失败  写入log文件
         $this->boolean = $rs && $this->boolean;
         if(!$rs){
-            $this->error($this->mysqli->error);
+            $this->error('sql error,check sql');
         }
 
         return $rs;
