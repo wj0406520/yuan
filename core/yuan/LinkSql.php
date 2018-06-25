@@ -137,7 +137,7 @@ class LinkSql
     */
     public function table($table)
     {
-        $this->table = (strpos($table, $this->pref) === false)?$this->pref.$table:$table;
+        $this->table = ($this->pref&&(strpos($table, $this->pref) === false))?$this->pref.$table:$table;
         $this->dbName($this->table);
         // $this->checkTable();
         return $this;
