@@ -71,7 +71,7 @@ class Produce
         $config = self::$config;
         $table_name = $local['pref'].$table;
         $table = self::$local['table'][$table];
-        $indexs = $table['index'];
+        $indexs = isset($table['index'])?$table['index']:[];
 
         // $table['column']['']
         $arr = [];
@@ -211,7 +211,8 @@ class Produce
         $config = self::$config;
         $index = self::getIndex(1);
 
-        foreach ($equal['index'] as $key => $value) {
+        $temp = isset($equal['index'])?$equal['index']:[];
+        foreach ($temp as $key => $value) {
             $status = 1;
             if(array_key_exists($key, $index)){
                 $type = explode(' ',$index[$key]['type']);
