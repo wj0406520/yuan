@@ -93,12 +93,19 @@ class MysqliData
 		closedir($dir);
 
 		foreach ($sql['table'] as $key => $value) {
-			if(($num = array_search(ucfirst($key), $file))!==false){
+			$temp = explode('_', $key);
+			$big_name = '';
+			foreach ($temp as $v) {
+				$big_name .= ucfirst($v);
+			}
+
+			if(($num = array_search($big_name, $file))!==false){
 				unset($file[$num]);
 			}
 			$this->writeFile($key, $value);
 			echo ".";
 		}
+
 		foreach ($file as $key => $value) {
 			echo ".";
 			unlink(MODELS_DIR.$value.'.php');
@@ -122,7 +129,11 @@ class MysqliData
 		}
 		$link_table = implode(",\n        ", $temp);
 		$link_table = $link_table?"\n        ".$link_table."\n    ":"";
-		$big_name = ucfirst($name);
+		$temp = explode('_', $name);
+		$big_name = '';
+		foreach ($temp as $value) {
+			$big_name .= ucfirst($value);
+		}
 		$file = MODELS_DIR.$big_name.'.php';
 
 		$temp = [];

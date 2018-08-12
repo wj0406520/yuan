@@ -137,7 +137,7 @@ class LinkSql
     */
     public function table($table)
     {
-        $this->table = (strpos($table, $this->pref) === false)?$this->pref.$table:$table;
+        $this->table = ($this->pref&&(strpos($table, $this->pref) === false))?$this->pref.$table:$table;
         $this->dbName($this->table);
         // $this->checkTable();
         return $this;
@@ -379,7 +379,7 @@ class LinkSql
         if(array_key_exists($this->main_key,$data)){
             $crea = $data[$this->main_key];
         }
-
+        $rs = false;
         if($crea){
             unset($this->data[$this->main_key]);
             $rs = $this->where([$this->main_key=>$crea])->autoExecute('update');
@@ -517,6 +517,7 @@ class LinkSql
     private function linkSql()
     {
         $this->db->setParam($this->bind_param['where']);
+        $this->bind_param = ['where'=>[],'insert'=>[],'update'=>[],'diy'=>[]];
         // $this->checkTable();
         $this->sql = 'SELECT '.
         $this->field. ' FROM ' .
