@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -66,6 +64,7 @@ class ImgBase
             $path=DATA.$upload_dir;
             if(!is_dir($path)){
                 mkdir($path, 0777, true);
+                chmod($path, 0777);
             }
             if (!file_put_contents($path.$newname, base64_decode(str_replace($result[1], '', $base64_image_content)))){
                 self::$error='fileFail';

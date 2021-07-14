@@ -1,0 +1,35 @@
+ <div class="sidebar-wrap">
+        <div class="sidebar-title">
+            <h1>菜单</h1>
+        </div>
+        <div class="sidebar-content">
+            <ul class="sidebar-list">
+                <li>
+                    <a href="#"><i class="icon-font">&#xe003;</i>常用操作</a>
+                    <ul class="sub-menu">
+                <?php if($this->isAdmin()){?>
+                        <li><a href="<?php $this->url('shop/index');?>"><i class="icon-font"></i>商家管理</a></li>
+                        <li><a href="<?php $this->url('order/index');?>"><i class="icon-font"></i>订单管理</a></li>
+                        <li><a href="<?php $this->url('pay/index');?>"><i class="icon-font"></i>账号管理</a></li>
+                <?php }?>
+                        <!-- <li><a href="<?php $this->url('ali/index');?>"><i class="icon-font"></i>账号管理</a></li> -->
+                        <li><a href="<?php $this->url('address/index');?>"><i class="icon-font"></i>地图列表</a></li>
+                <?php if($this->isAdmin()){?>
+                        <li><a href="<?php $this->url('agent/index');?>"><i class="icon-font"></i>提现账户管理</a></li>
+                <?php }?>
+                        <li><a href="<?php $this->url('index/password');?>"><i class="icon-font"></i>修改密码</a></li>
+                    </ul>
+                </li>
+                <?php if($this->isAdmin()){?>
+                <li>
+                    <a href="#"><i class="icon-font">&#xe005;</i>统计数据</a>
+                    <ul class="sub-menu">
+                        <li><a href="<?php $this->url('source/user');?>"><i class="icon-font"></i>用户日结</a></li>
+                        <li><a href="<?php $this->url('source/bank');?>"><i class="icon-font"></i>账号日结</a></li>
+                        <li><a href="<?php $this->url('source/money');?>"><i class="icon-font"></i>收益日结</a></li>
+                    </ul>
+                </li>
+                <?php }?>
+            </ul>
+        </div>
+    </div>

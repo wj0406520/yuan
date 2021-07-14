@@ -1,9 +1,49 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-	<title><?php echo $this->route('title');?></title>
+    <meta charset="UTF-8">
+    <title><?php echo $this->route('title');?></title>
+    <link rel="stylesheet" type="text/css" href="<?php $this->path();?>css/common.css"/>
+    <link rel="stylesheet" type="text/css" href="<?php $this->path();?>css/main.css?<?php echo TIME?>"/>
+    <link href="<?php $this->path();?>um/themes/default/css/umeditor.css" type="text/css" rel="stylesheet">
+    <script type="text/javascript" src="<?php $this->path();?>js/libs/modernizr.min.js"></script>
+    <script type="text/javascript" src="<?php $this->path();?>js/jquery.js"></script>
+    <script type="text/javascript" src="<?php $this->path();?>js/common.js?<?php echo TIME?>"></script>
+    <script type="text/javascript" src="<?php $this->path();?>js/main.js?<?php echo TIME?>"></script>
+
 </head>
 <body>
-	<?php include $file;?>
+<!--/error-info-->
+<div class="error-info">
+</div>
+<!--/error-info-->
+<!--/cover-->
+<div id="cover">
+    <div class="main-cover">
+        <div class="close"><i class="icon-font">&#xe024;</i></div>
+        <div class="content-cover"></div>
+    </div>
+    <div class="load"></div>
+</div>
+<!--/cover-->
+
+
+<?php include $view_dir.'/main/top.html'; ?>
+
+<?php include $view_dir.'/main/menu.html'; ?>
+<div class="main-wrap">
+<?php include $file;?>
+</div>
+
+<script type="text/javascript">
+    function imgUrl(){
+        return "<?php $this->url('index/flist')?>";
+    }
+    function imgUploadUrl(){
+        return "<?php $this->url('index/upload')?>";
+    }
+</script>
+    <!--/main-->
+</div>
 </body>
 </html>

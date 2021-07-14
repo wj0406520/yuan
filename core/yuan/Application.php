@@ -2,8 +2,6 @@
 
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-04-29
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -14,7 +12,6 @@
 +----------------------------------------------------------------------
 */
 namespace core\yuan;
-
 
 class Application
 {
@@ -52,13 +49,13 @@ class Application
 		// $arr = get_defined_constants(1);
 		// print_r($arr['user']);
 // exit;
-		// 结束运行
+		// 系统正常结束运行
 		self::end();
 	}
 
 	private static function end()
 	{
-		Log::writeFile();
+
 	}
 
 	private static function splAutoload()
@@ -73,8 +70,6 @@ class Application
 	    $class = str_replace('\\', '/', $class);
 	    $class .= '.php';
 	    $file = ROOT . $class;
-	    // echo $class;
-	    // echo '<br>';
 	    if (is_file($file)) {
 	        require($file);
 	    } else {

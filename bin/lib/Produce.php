@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-06-8
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -37,7 +35,9 @@ class Produce
     }
     public static function schema($db_name)
     {
-        $sql = "CREATE DATABASE IF NOT EXISTS `$db_name` CHARACTER SET utf8 COLLATE utf8_bin;\nuse `$db_name`;\n\n";
+        $config = self::$config;
+        $sql = "### ".date('Y-m-d H:i:s')."\n";
+        $sql .= "DROP DATABASE IF EXISTS `$db_name`;\nCREATE DATABASE IF NOT EXISTS `$db_name` CHARACTER SET {$config['charset']} COLLATE {$config['collate']};\nuse `$db_name`;\n\n";
         return $sql;
     }
 
@@ -59,7 +59,7 @@ class Produce
             return self::schema($db_name);
         }
         if($status == 0){
-            $sql = "ALTER DATABASE `$db_name` CHARACTER SET utf8 COLLATE utf8_bin;\nuse `$db_name`;\n\n";
+            $sql = "ALTER DATABASE `$db_name` CHARACTER SET {$local['charset']} COLLATE {$local['collate']};\nuse `$db_name`;\n\n";
             return $sql;
         }
         return "use `$db_name`;\n";
@@ -95,13 +95,16 @@ class Produce
             if($value['comment']){
                 $comment = "COMMENT '".$value['comment']."'";
             }
+            $default = self::typeToDefaul($value);
+            $default = " DEFAULT '".$default."' ";
+            $default = ($value['type']=='text')?'':$default;
 
-            $arr[]=$begin.$size.$extra.$null.$comment;
+            $arr[]=$begin.$size.$extra.$null.$default.$comment;
 
         }
         $time = self::$time;
-        $arr[] = "`".$config['update_at']."` int(11) NOT NULL COMMENT '{$time['update_at']}'";
-        $arr[] = "`".$config['create_at']."` int(11) NOT NULL COMMENT '{$time['create_at']}'";
+        $arr[] = "`".$config['update_at']."` int(11) NOT NULL DEFAULT 0 COMMENT '{$time['update_at']}'";
+        $arr[] = "`".$config['create_at']."` int(11) NOT NULL DEFAULT 0 COMMENT '{$time['create_at']}'";
 
         $arr[] = "PRIMARY KEY (`".$config['main_key']."`)";
 
@@ -146,6 +149,37 @@ class Produce
             self::$sqls[] = "ALTER TABLE `{$table['Name']}` ENGINE={$equal['engine']} DEFAULT COLLATE={$config['collate']} COMMENT='{$equal['comment']}'";
         }
     }
+    private static function typeToDefaul($val)
+    {
+        switch ($val['type']) {
+            case 'int':
+                $default = "0";
+            case 'tinyint':
+                $default = "0";
+            case 'bigint':
+                $default = "0";
+            case 'decimal':
+                $arr = explode(',', $val['size']);
+                $str = '';
+                if(isset($arr[1])){
+                    $str = '.'.str_repeat('0',$arr[1]);
+                }
+                $default = "0".$str;
+                break;
+            case 'varchar':
+                $default = '';
+            case 'char':
+                $default = '';
+                break;
+            case 'text':
+                $default = null;
+                break;
+            default:
+                $default = '';
+                break;
+        }
+        return $default;
+    }
     public static function columnEqual()
     {
         $table = self::$table;
@@ -160,6 +194,7 @@ class Produce
         $equal['column'][$config['create_at']] = ['comment'=>$time['create_at'], 'type'=>'int','size'=>'11', 'unsign'=>'0'];
         foreach ($equal['column'] as $key => $value) {
             $status = 1;
+            $default = self::typeToDefaul($value);
             if(in_array($key,$co)){
                 $num = array_search($key, $co);
                 $temp = $column[$num];
@@ -172,9 +207,13 @@ class Produce
                 $type = $arr[0]?$arr[1][0]:$type[0];
                 $size = $arr[0]?$arr[2][0]:0;
 
+                if(stripos($type,'int')!==false && $size==0){
+                    $size = $value['size'];
+                }
+
                 if($value['comment']!=$temp['Comment']
-                    ||($temp['Collation']!=$config['collate']&&!$config['collate'])
-                    ||$temp['Default']!=''
+                    ||($temp['Collation'] && $temp['Collation']!=$config['collate'] && $config['collate'])
+                    ||$temp['Default']!==$default
                     ||$temp['Null']!='NO'
                     ||$value['type']!=$type
                     ||$value['size']!=$size
@@ -190,10 +229,13 @@ class Produce
             if($status==1){
                 continue;
             }
+
             $str = $status==0?'MODIFY':'ADD';
             $size = $value['size']?'('.$value['size'].')':'';
             $unsign = $value['unsign']?'unsigned ':'';
-            self::$sqls[] = "ALTER TABLE `{$table['Name']}` {$str} COLUMN `{$key}` {$value['type']}{$size} {$unsign}NOT NULL COMMENT '{$value['comment']}' AFTER `{$now}`";
+            $text_default = ($value['type']=='text')?'':"DEFAULT '{$default}'";
+            // $charset = $temp['Collation']?"CHARACTER SET {$config['charset']} COLLATE {$config['collate']} ":'';
+            self::$sqls[] = "ALTER TABLE `{$table['Name']}` {$str} COLUMN `{$key}` {$value['type']}{$size} {$unsign}NOT NULL {$text_default} COMMENT '{$value['comment']}' AFTER `{$now}`";
 
         }
         $num = array_search($config['main_key'],$co);
@@ -274,9 +316,10 @@ class Produce
         $table = self::$table['Name'];
         $sql = "INSERT INTO `$table` VALUES ";
         foreach ($data as $key => $value) {
-            $sql .= '("';
-            $sql .= implode('","',$value);
-            $sql .= "\"),\n";
+            $value = str_replace("'", "\\'", $value);
+            $sql .= "('";
+            $sql .= implode("','",$value);
+            $sql .= "'),\n";
         }
         $sql = substr($sql, 0, -2);
         $sql .= ";\n\n";
@@ -401,8 +444,6 @@ EXT;
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       {$time}
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -412,7 +453,6 @@ EXT;
 */
 
 return [
-    'schema'=>'{$db_name}',
     'charset'=>'{$config['charset']}',
     'collate'=>'{$config['collate']}',
 
@@ -458,14 +498,18 @@ return $data;
             $comment = '';
             $collation = '';
             $extra =$value['Extra'];
+
             if($value['Collation']){
-                $collation = ' CHARACTER SET utf8 COLLATE '.$value['Collation'];
+                $collation = ' CHARACTER SET '.$config['charset'].' COLLATE '.$value['Collation'];
             }
             if($value['Null']=='NO'){
                 $null = ' NOT NULL ';
             }
             if(!is_null($value['Default'])){
                 $default = " DEFAULT '".$value['Default']."'";
+                if($value['Type']=='text'){
+                    $default = '';
+                }
             }
             if($value['Comment']){
                 $comment = " COMMENT '".$value['Comment']."'";

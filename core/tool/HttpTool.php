@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -18,7 +16,7 @@ class HttpTool
     private $data = [];
     private $header = [];
     private $err = '';
-    private $info = [];
+    private $show_header = 0;
     // private $cookie_file = 'cookiefile.txt';
     private $cookie_file = '';
     /**
@@ -48,6 +46,10 @@ class HttpTool
      */
     public function setHeader($header)
     {
+        $arr = [];
+        foreach ($header as $key => $value) {
+            $arr[] = $key.':'.$value;
+        }
         $this->header = $header;
         return $this;
     }
@@ -75,10 +77,11 @@ class HttpTool
      */
     public function getHeader()
     {
-        return $this->info;
+        $this->show_header = 1;
+        return $this;
     }
     /**
-     * [getHeader 获取响应状态码]
+     * [getCode 获取响应状态码]
      * @return [string]         [状态码]
      */
     public function getCode()
@@ -87,10 +90,22 @@ class HttpTool
     }
     /**
      * [post 发出post请求]
+     * MIME Multipart Media Encapsulation, Type: multipart/form-data
      * @return [string]         [请求结果]
      */
     public function post()
     {
+       $re = self::http(2);
+       return $re;
+    }
+    /**
+     * [postUrlencode 发出post请求]
+     * HTML Form URL Encoded: application/x-www-form-urlencoded
+     * @return [string]         [请求结果]
+     */
+    public function postUrlencode()
+    {
+        $this->data = http_build_query($this->data);
        $re = self::http(2);
        return $re;
     }
@@ -101,6 +116,12 @@ class HttpTool
     public function postJson()
     {
         $this->data = json_encode($this->data);
+        $this->header[]='Content-Type:application/json';
+        $re = self::http(2);
+        return $re;
+    }
+    public function postRow()
+    {
         $this->header[]='Content-Type:application/json';
         $re = self::http(2);
         return $re;
@@ -142,8 +163,8 @@ class HttpTool
         $curl = curl_init();
         switch ($type) {
             case '0':
-                    $str=http_build_query($arr);
-                    $url=$str?$url.'?'.$str:$url;
+                    $str = http_build_query($arr);
+                    $url = $str ? $url . '?' . $str : $url;
                 break;
             case '1':
                 //设置发送方式：
@@ -162,27 +183,32 @@ class HttpTool
             curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
         }
         if($file){
-            $file .= TEMP_DIR;
+            $file = TEMP_DIR.$file;
             //设置cookie和带参cookie
             curl_setopt($curl,CURLOPT_COOKIEFILE,$file);
             curl_setopt($curl,CURLOPT_COOKIEJAR,$file);
         }
         curl_setopt($curl, CURLOPT_URL,$url);
         //定义是否显示状态头 1：显示 ； 0：不显示
-        curl_setopt($curl, CURLOPT_HEADER,0);
+        curl_setopt($curl, CURLOPT_HEADER,$this->show_header);
          // 获取数据返回
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         //强制协议为1.0
-        curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
+        curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
         //关闭ssl
-        curl_setopt($curl,CURLOPT_SSL_VERIFYPEER,false);
-        curl_setopt($curl,CURLOPT_SSL_VERIFYHOST,false);
+        // curl_setopt($curl,CURLOPT_SSL_VERIFYPEER,true);
+        // curl_setopt($curl,CURLOPT_SSL_VERIFYHOST,2);
+
+        // curl_setopt($curl,CURLOPT_CAINFO,TOOL.'charles-ssl-proxying-certificate.pem');
+
         //强制使用IPV4协议解析域名
         curl_setopt($curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4 );
+        // 设置请求超时时间
+        curl_setopt($curl, CURLOPT_TIMEOUT, 10);
         //存取数据
         $file_contents = curl_exec($curl);
         $err = curl_error($curl);
-        $this->info = curl_getinfo($curl);
+        // $this->info = curl_getinfo($curl);
         //关闭cURL资源，并且释放系统资源
         curl_close($curl);
         if ($err) {

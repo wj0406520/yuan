@@ -1,5 +1,13 @@
 <?php
-
+/*
++----------------------------------------------------------------------
+| time       2018-06-8
++----------------------------------------------------------------------
+| version    4.0.1
++----------------------------------------------------------------------
+| introduce  生成app内容
++----------------------------------------------------------------------
+*/
 namespace bin\lib;
 
 class App
@@ -72,20 +80,14 @@ EXT;
 	private function publicHtaccess()
 	{
 		$data = <<<EXT
-Options +FollowSymLinks
-IndexIgnore */*
-RewriteEngine on
+<IfModule mod_rewrite.c>
+  Options +FollowSymlinks -Multiviews
+  RewriteEngine On
 
-#min
-RewriteRule res/j/([0-9]*)/(.*)$ miniTool/?b=site/js&f=$2&version=$1
-RewriteRule res/c/([0-9]*)/(.*)$ miniTool/?b=site/css&f=$2&version=$1
-
-# if a directory or a file exists, use it directly
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-
-# otherwise forward it to index.php
-RewriteRule . index.php
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^(.*)$ index.php [L,E=PATH_INFO:$1]
+</IfModule>
 EXT;
 
 		$file = $this->open_dir.$this->public_dir.'/.htaccess';

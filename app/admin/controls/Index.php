@@ -1,57 +1,69 @@
 <?php
 
 namespace app\admin\controls;
+use service\package\Tool;
+use core\yuan\Handle;
 
 class Index extends All
 {
+
+    public $form = [
+        'password'=>['password','new_password','re_password'],
+    ];
+
+    public $handle = [
+        'ppost'=>['form'=>'password'],
+        'flist'=>['pagesize','page']
+    ];
+
 	public function indexAction()
 	{
-		// print_r($this->route);
-		// print_r($this->dao);
-		// $this->dao->create();
-		// $this->dao->upda();
-		// $client = new \Predis\Client();
-		// $client->set('xixi',1111);
-		// print_r($client);
-		// $data = $this->dao->getUserPlan();
-		$data = $this->dao->getUserPlan();
-		// print_r($this->dao->user_id);
-		print_r($data);
-		// exit;
-		return false;
-		$this->page(1000, 1, 10);
-
-		// $this->display();
-		// print_r($this->page);
-
-// 1.循环出内容
-// 2.循环出标题
-// 3.数据循环出的时候处理
-// 4.新增，删除操作
-// 5.翻页函数
-// 6.可以扩展
-
-// $list->data($data);
-// $list->register(function($value){
-// 		$value['date'] = strtotime('Y-m-d',$value['date']);
-// });
-// $list->run();
-
-
-		// $this->chooseData(['select'=>[0=>'aa',2=>'bb'],'id_used'=>['22'=>'lalala','33'=>'iiii']]);
-		// $user['checkbox'] = '1,2,3,4';
-		// $this->defaultData($user);
-		$this->nameData('wang')->form(['checkbox','id_used']);
-		// print_r($this->handle);
-		// echo 111;
-		// $this->form();
-		$arr = $this->route;
-		// print_r($arr);
-		$this->setValue($arr);
+		$ichart = $this->dao->ichart();
+		$data = $this->dao->getUserAllInfo();
+		$temp = $this->dao->getUserTodayInfo();
+		$m = $this->dao->getProportsMoney();
+		$arr = array_merge($data,$temp,$m);
+		// $this->dao->text();
+        $this->setValue(['data'=>$arr,'ichart'=>$ichart]);
 		$this->display();
 	}
-	public function hahaAction()
+
+	public function outAction()
 	{
-		echo 22;
+		$this->clearSession();
+		$this->redirect('login/index');
+		$this->display();
 	}
+
+
+    public function passwordAction()
+    {
+		$this->form();
+		$this->display();
+    }
+    public function ppostAction()
+    {
+    	$this->dao->changePassword();
+    	$this->redirect('password');
+    	$this->display();
+    }
+    public function uploadAction()
+    {
+        $data['url'] = Tool::upload('img_url');
+        $this->setValue($data);
+        $this->display();
+    }
+
+    public function textAction()
+    {
+        $data = ['password'=>'1000000','new_password'=>'1000000'];
+        $config = [
+            'password','new_password'
+        ];
+        Handle::run($config, $data);
+        $re = $this->request();
+        var_dump($re);
+        echo 11;
+    }
+
 }

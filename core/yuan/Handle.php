@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-04-29
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -17,58 +15,135 @@ use core\tool\Card;
 class Handle
 {
 
-	private static $name = 'handle';
-	private static $check = [];
-  private static $data_array = [];         //用户传的数据
-  private static $error = ['key'=>'','name'=>'','message'=>''];
-  private static $handle_array = [];
-  private static $config = [];
+  	private static $name = 'handle';
+  	private static $check = [];
+    private static $data_array = [];         //用户传的数据
+    private static $error = ['key'=>'','name'=>'','message'=>''];
+    private static $handle_array = [];
+    private static $config = [];
+    private static $change_name = [];
+    private static $check_data = [];
 
-	private static function init()
-	{
-      self::$config = Config::get(self::$name);
-  		$d = Route::data(self::$name);
-  		$check = [];
-  		// print_r($d);
-      if(!$d){
-        return false;
-      }
-  		array_walk($d,function($value) use (&$check){
-  			// echo $value;
-  			$check[$value] = self::config($value);
-  		});
-  		self::$check = $check;
-  		// self::$method = $d['method']!='api';
-  		self::handle();
-  		// print_r($check);
-  		// print_r(self::$handle_array);
-  		// echo 2;
-  		return self::$handle_array;
-	}
+  	private static function init()
+  	{
+        // self::$config = Config::get(self::$name);
+        self::$config = Config::get('form');
+        // self::$config = Config::get('form');
+        // print_r(self::$config);
+        // exit;
+    		$d = self::$check_data;
+    		$check = [];
+        if(!$d){
+          return false;
+        }
+    		array_walk($d,function($value) use (&$check){
+    			// echo $value;
+          $temp = self::config($value);
+          if(isset($temp['sql_type'])){
+            $temp['verificate'] = ['type','error_type',$temp['sql_type']];
+          }
 
-  private static function config($value)
-  {
-      $str = strtolower(URL_CONTROL.'.'.URL_MODEL);
-      $str .= '.'.$value;
-      $config = self::$config;
-      $data = [];
-      if(!array_key_exists($str,$config)){
-          $str = $value;
-      }
-      if(!array_key_exists($str,$config)){
-          self::error('route no handle parms '.$str);
-      }
+          if(!isset($temp['verificate'])){
+            self::error($value.' no hava form verificate');
+          }
+          if(!isset($temp['name'])){
+            self::error($value.' no hava form name');
+          }
+          $arr = [];
+          $arr['name'] = $temp['name'];
+          $arr['handle'] = $temp['verificate'];
+          $check[$value] = $arr;
+    			// $check[$value] = self::config($value);
+    		});
+    		self::$check = $check;
+    		// self::$method = $d['method']!='api';
+    		self::handle();
+    		// print_r(self::$handle_array);
+    		// echo 2;
+    		return self::$handle_array;
+  	}
 
-      return $config[$str];
-  }
+    private static function config($value)
+    {
+        $str = strtolower(P('URL_CONTROL').'.'.P('URL_MODEL'));
+        $str .= '.'.$value;
+        $config = self::$config;
+        $data = [];
+        if(!array_key_exists($str,$config)){
+            $str = $value;
+        }
+        if(!array_key_exists($str,$config)){
+            self::error('route no handle parms '.$str);
+        }
 
-	public static function data()
-	{
-  		if(!self::$handle_array){
-  			self::init();
-  		}
-  		return self::$handle_array;
-	}
+        return $config[$str];
+    }
+    private static function setConfig($arr)
+    {
+        self::$handle_array = [];
+        self::$change_name = [];
+        self::$check_data = $arr;
+    }
+    private static function setData($arr)
+    {
+        self::$data_array = $arr;
+    }
+
+    public static function changeName($arr)
+    {
+        self::$change_name = $arr;
+    }
+
+    private static function cname(&$arr)
+    {
+        if(!self::$change_name){
+            return false;
+        }
+        foreach (self::$change_name as $key => $value) {
+            if(isset($arr[$key])){
+                $arr[$value] = $arr[$key];
+                unset($arr[$key]);
+            }
+        }
+    }
+
+    public static function request($key='')
+    {
+        $re = self::$handle_array;
+
+        if(!$key){
+            self::cname($re);
+            return $re;
+        }
+        if(is_array($key)){
+            $key = array_flip($key);
+            $re = array_intersect_key($re, $key);
+            self::cname($re);
+        }else{
+            $re = isset($re[$key])?$re[$key]:'';
+        }
+        return $re;
+    }
+
+    public static function setRequest($arr)
+    {
+        self::$handle_array = array_merge(self::$handle_array, $arr);
+    }
+
+    /*
+        $config = ['id','password'];
+        $data = ['id'=>'1','password'=>2111111];
+        用$config的数组，验证$data数据，需要在form.php中预先定义$config
+     */
+
+  	public static function run($config, $data)
+  	{
+          self::setConfig($config);
+          self::setData($data);
+    		// if(!self::$handle_array){
+    			self::init();
+    		// }
+  	}
       // $arr = self::handle([
       //     'password'=>['length','password','6,16'],
       //     'phone'=>['phone','phone'],
@@ -95,7 +170,7 @@ class Handle
             return true;
         }
 
-        self::$data_array = IS_POST ? $_POST : $_GET;
+        // self::$data_array = IS_POST ? $_POST : $_GET;
 
         foreach ($array as $key => $value) {
             self::$error['key'] = $key;
@@ -104,27 +179,31 @@ class Handle
             if(is_string($value)){
               $value = self::diyHandle($value);
             }
-	        switch ($value[0]) {
-	            case 'search':
-	              self::searchData($key,$value[1],$value[2]);
-	              break;
-	            case 'fill':
-	              $v=isset($value[2])?$value[2]:'';
-	              self::fillData($key,$value[1],$v);
-	              break;
-	            case 'arr':
-	              self::arrData($key,$value[1]);
-	              break;
-              case 'in':
-                  $v=isset($value[2])?$value[2]:$key;
-                  self::typeData($value[1],$v);
-                break;
+  	        switch ($value[0]) {
+  	            case 'search':
+  	              self::searchData($key,$value[1],$value[2]);
+  	              break;
+  	            case 'fill':
+  	              $v=isset($value[2])?$value[2]:'';
+  	              self::fillData($key,$value[1],$v);
+  	              break;
+  	            case 'arr':
+  	              self::arrData($key,$value[1]);
+  	              break;
+                case 'in':
+                    $v=isset($value[2])?$value[2]:'';
+                    self::typeData($key,$value[1],$v,1);
+                  break;
+                case 'type':
+                    $v=isset($value[2])?$value[2]:'';
+                    self::typeData($key,$value[1],$v);
+                  break;
 
-	            default:
-	              $v=isset($value[2])?$value[2]:'';
-	              self::valData($key,$value[0],$value[1],$v);
-	              break;
-	        }
+  	            default:
+  	              $v=isset($value[2])?$value[2]:'';
+  	              self::valData($key,$value[0],$value[1],$v);
+  	              break;
+  	        }
         }
         // $arr = self::$handle_array;
         // self::$handle_array=[];
@@ -139,10 +218,13 @@ class Handle
     private static function diyHandle($v)
     {
         $arr = [
+          'length612'=>['length','length','6,12'],
+          'fills'=>['fill','string',''],
+          'filld'=>['fill','double',0.00],
           'fill'=>['fill','int','0'],
           'page'=>['fill','int','1'],
-          'pagesize'=>['fill','int','15'],
-          'phone'=>['phone','error'],
+          'pagesize'=>['fill','int','30'],
+          'phone'=>['phone','error_phone'],
           'search'=>['search',true,''],
           'file'=>['file','error_service',''],
           'email'=>['email','error'],
@@ -156,19 +238,20 @@ class Handle
     }
 
 
-    private static function typeData($error,$name)
+    private static function typeData($name,$error,$type,$t = 0)
     {
         $arr = self::$data_array;
-
-        $type = Config::getMore('type.'.$name);
-
-        $name = explode('.',$name);
-
-        $name = count($name)==1?$name[0]:$name[1];
-
         $a = isset($arr[$name]) ? $arr[$name] : '';
 
-        if (!$a || !array_key_exists($a,$type)) {
+        if($t==0){
+            $type = Config::getMore('type.'.$type);
+            $b = !array_key_exists($a,$type);
+        }else{
+            $type = explode(',',$type);
+            $b = !in_array($a,$type);
+        }
+
+        if ($a=='' || $b) {
             self::$error['message'] = $error;
             self::errorMsg();
         }
@@ -187,9 +270,9 @@ class Handle
 
         $arr = self::$data_array;
 
-        $a = isset($arr[$name]) ? $arr[$name] : '';
+        $a = isset($arr[$name]) ? $arr[$name] : null;
 
-        if (!$a || !self::contrast($a, $rule, $parm)) {
+        if ($a==null || !self::contrast($a, $rule, $parm)) {
             self::$error['message'] = $error;
             self::errorMsg();
         }
@@ -233,20 +316,23 @@ class Handle
     private static function fillData($name,$type,$val)
     {
 
-        $arr=self::$data_array;
+        $arr = self::$data_array;
+        $temp = isset($arr[$name])?$arr[$name]:'';
+        $temp = trim($temp);
+        $a = '';
 
         switch ($type) {
           case 'int':
-            $a = isset($arr[$name]) ? (intval($arr[$name]) ? intval($arr[$name]) : $val) : $val;
+            $a = $temp && intval($temp) ? intval($temp) : $val;
             break;
           case 'double':
-            $a = isset($arr[$name]) ? (floatval($arr[$name]) ? floatval($arr[$name]) : $val) : $val;
+            $a = $temp && floatval($arr[$name]) ? floatval($arr[$name]) : $val;
             break;
           case 'string':
-            $a = isset($arr[$name]) ? trim($arr[$name]) : $val;
+            $a = $temp ? $temp : $val;
             break;
           case 'time':
-            $a = isset($arr[$name]) ? (strtotime($arr[$name]) ? strtotime($arr[$name]) : '') : '';
+            $a = $temp && strtotime($temp) ? strtotime($temp) : '';
             break;
 
           default:
@@ -266,7 +352,7 @@ class Handle
     private static function searchData($name,$exit,$val)
     {
 
-        $arr=self::$data_array;
+        $arr = self::$data_array;
 
         $a = isset($arr[$name]) ? (is_string($arr[$name]) ? trim($arr[$name]) : $arr[$name]) : '';
 
@@ -276,7 +362,7 @@ class Handle
           }
         }
 
-        self::$handle_array[$name]=$a;
+        self::$handle_array[$name] = $a;
     }
 
 
@@ -300,14 +386,15 @@ class Handle
                 if (!$parm) {
                   self::error('IN lose parm');
                 }
-                $tmp = explode(',', $parm);
-                return in_array($value, $tmp);
+                $temp = explode(',', $parm);
+                return in_array($value, $temp);
             case 'between':
             	$parm = explode(',', $parm);
                 if (count($parm)!=2) {
                   self::error('BETWEEN lose parm');
                 }
                 list($min,$max) = $parm;
+                self::$error['name'] .= ','.$min."，".$max;
                 return $value >= $min && $value <= $max;
             case 'length':
             	$parm = explode(',', $parm);
@@ -316,9 +403,12 @@ class Handle
                 }
                 list($min,$max) = $parm;
                 $len = mb_strlen($value, "utf-8");
+                self::$error['name'] .= ','.$min."，".$max;
                 return $len >= $min && $len <= $max;
             case 'phone':
-                return preg_match("/^1[345678]{1}\d{9}$/", $value);
+                return preg_match("/^1[3456789]{1}\d{9}$/", $value);
+            case 'ip':
+                return preg_match("/\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b/", $value);
             case 'card':
               return Card::checkIdCard($value);
               break;
@@ -338,7 +428,7 @@ class Handle
 
     private static function error($message)
     {
-      Error::setMessage($message);
+        Error::setMessage($message);
     }
 
     /**

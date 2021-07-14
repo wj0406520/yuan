@@ -1,5 +1,13 @@
 <?php
-
+/*
++----------------------------------------------------------------------
+| time       2018-06-8
++----------------------------------------------------------------------
+| version    4.0.1
++----------------------------------------------------------------------
+| introduce  产生数据库语句
++----------------------------------------------------------------------
+*/
 namespace bin\lib;
 
 use core\yuan\Route as RouteData;
@@ -9,6 +17,7 @@ class Route
 	private $app_dir = '';
 	private $project_dir = ROOT.PROJECT.'/';
 	private $is_web = 0;
+	private $def_is_web = 0;
 	private $route = [];
 	private $controls = '';
 	private $action = '';
@@ -19,8 +28,10 @@ class Route
 			return false;
 		}
 
+
 		foreach ($url as $key => $value) {
 			$this->app_dir = $value['app'];
+			$this->def_is_web = $value['is_web'];
 			$this->is_web = $value['is_web'];
 			$this->route = RouteData::data('',$value['app']);
 			$this->controlsFile();
@@ -34,9 +45,11 @@ class Route
 			$this->htmlDir();
 		}
 		foreach ($this->route as $key => $value) {
+			$this->is_web = isset($value['is_web'])?$value['is_web']:$this->def_is_web;
 			$temp = explode('.', $key);
 			if(!isset($temp[1])) continue;
 
+			// echo $temp[0].$temp[1].$this->is_web."\n";
 			$this->controls = $temp[0];
 			$this->action = $temp[1];
 // 1文件是否存在
@@ -64,7 +77,7 @@ class Route
 
 			$temp = str_split($data, strrpos($data, '}'));
 
-			$str = PHP_EOL."    public function $action()".PHP_EOL."    {".PHP_EOL."    }".PHP_EOL."}";
+			$str = PHP_EOL."    public function $action()".PHP_EOL."    {".PHP_EOL.'        $this->display();'.PHP_EOL."    }".PHP_EOL."}";
 			$data = $temp[0].$str;
 
 			file_put_contents($file, $data);
@@ -88,6 +101,7 @@ class $controls extends All
 
 	public function {$action_name}{$action}()
 	{
+		\$this->display();
 	}
 }
 EXT;
@@ -105,13 +119,15 @@ EXT;
 			if($f=='.'||$f=='..') continue;
 			// echo $f;
 			$temp = explode('.',$f);
-			$arr .= '// use service\\models\\'.$temp[0]."\n";
+			$arr .= '// use service\\models\\'.$temp[0].";\n";
 		}
 		$dao = DAO;
 		$uc_dao = ucfirst($dao);
 		$data = <<<EXT
 <?php
 namespace app\\$dir\\$dao;
+
+use core\yuan\Handle;
 
 $arr
 

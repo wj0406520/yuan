@@ -17,16 +17,17 @@ return [
 
 	'index.index' => [
 		'title'=>'首页',
-		'handle' => ['name','card','phone','is_used'],
-		// 'handle' => [],
+		'handle' => ['token'],
 		// 'is_web' => '0',
 		'is_check'=>0
 	],
-	'login.index'=>[
-		'title'=>'登录',
-		'handle'=>['aa'],
+	'phone.index' => [
+		'title'=>'手机接口',
+		'handle' => [],
 		// 'is_web' => '0',
-		'is_check'=>0,
+		'is_check'=>0
 	],
+
+
 
 ];

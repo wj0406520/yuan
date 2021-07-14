@@ -1,30 +1,77 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title><?php echo $this->route('title');?></title>
-</head>
-<body>
-22
-<table>
-<?php foreach($views->getForm('wang') as $value){; ?>
-<tr>
-<td><?php echo $value['name'];?></td><td><?php echo $value['html'];?></td><td><?php echo $value['form_name']?></td>
-</tr>
+<?php if($this->isAdmin()){?>
+    <div class="result-wrap" style="width: 730px">
+
+        <div class="result-title">
+            <h1>交易信息</h1>
+        </div>
+        <?php $data = $this->getValue('data');?>
+        <div class="result-content">
+            <ul class="user-money">
+                <li>总到账金额:<?php echo $data['all_money'];?></li>
+                <li>总订单数:<?php echo $data['all_num'];?></li>
+                <li>今日成交金额:<?php echo $data['today_money']?$data['today_money']:'0.00';?></li>
+                <li>总提现金额:<?php echo $data['bank_money'];?></li>
+                <li>今日订单数:<?php echo $data['today_num']?$data['today_num']:0;?></li>
+                <li>账户余额:<?php echo $data['money'];?></li>
+                <li>总收益:<?php echo round($data['pay_money'],2);?></li>
+            </ul>
+        </div>
+    </div>
+
+
+
+<!--
+<div id="canvasDiv"></div>
+<script charset="utf-8" src="http://www.ichartjs.com/ichart.latest.min.js"></script>
+<script type="text/javascript">
+
+
+        //定义数据
+        var data = [
+            <?php foreach($this->getValue('ichart') as $k=>$v){?>
+            {name : <?php echo substr($v['create_data'],-2);?>,value : <?php echo round($v['money']/10000,2);?>,color:'#76a871'},
+            <?php }?>
+         ];
+         $(function(){
+            var chart = new iChart.Column2D({
+                render : 'canvasDiv',//渲染的Dom目标,canvasDiv为Dom的ID
+                data: data,//绑定数据
+                title : '前30天交易记录',//设置标题
+                width : 1200,//设置宽度，默认单位为px
+                height : 600,//设置高度，默认单位为px
+                shadow:true,//激活阴影
+                shadow_color:'#c7c7c7',//设置阴影颜色
+                sub_option:{
+                  label:{
+                        fontsize:12,
+                        color:"#000",
+                  }
+                },
+                label:{
+                        fontsize:10,
+                        color:"#000",
+                        fontunit:20
+                },
+                coordinate:{//配置自定义坐标轴
+                    scale:[{//配置自定义值轴
+                         position:'left',//配置左值轴
+                         start_scale:0,//设置开始刻度为0
+                         // end_scale:26,//设置结束刻度为26
+                         // scale_space:2,//设置刻度间距
+                         listeners:{//配置事件
+                            parseText:function(t,x,y){//设置解析值轴文本
+                                return {text:t+" 万元"}
+                            }
+                        }
+                    }]
+                }
+            });
+            //调用绘图方法开始绘图
+            chart.draw();
+        });
+
+
+</script>
+-->
+
 <?php }?>
-</table>
-
-
-
-<table>
-<?php foreach($views->getForm('wang') as $value){; ?>
-<tr>
-<td><?php echo $value['name'];?></td><td><?php echo $value['html'];?></td><td><?php echo $value['form_name']?></td>
-</tr>
-<?php }?>
-</table>
-
-
-<?php echo $this->route('form');?>
-<?php echo $views->getPage()?>
-</body>
-</html>

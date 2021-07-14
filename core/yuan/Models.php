@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -16,7 +14,7 @@ namespace core\yuan;
 class Models
 {
     // 使用self::$user_id
-    public static $user_id = 0;           //用户id
+    public static $user = [];        //用户相关信息
 
     protected $column = [];
 
@@ -40,18 +38,19 @@ class Models
 
     private $update_at = ''; // 是更新 操作的字段
     private $create_at = ''; // 是创建 操作的字段
+    private $main_key = '';  // 主键
 
     public function __construct()
     {
         $config = Config::get('sql');
         $this->update_at = $config['update_at'];
         $this->create_at = $config['create_at'];
+        $this->main_key = $config['main_key'];
     }
 
     public function setAutoTime($bool = 0)
     {
         $this->auto_time = $bool;
-        return $this;
     }
 
     public static function init()
@@ -63,6 +62,10 @@ class Models
             self::$init[$name] = new static;
         }
         return self::$init[$name];
+    }
+    public static function imodel()
+    {
+        return self::init()->models();
     }
 
     public function models()
@@ -88,8 +91,9 @@ class Models
 
     public function getLink($link)
     {
-        if(!isset($this->link_table[$link])){
-            $this->error('link table error');
+        if(!$this->link_table || !isset($this->link_table[$link])){
+            return false;
+            // $this->error('link table error');
         }
         return $this->link_table[$link];
     }
@@ -109,6 +113,23 @@ class Models
         $this->models->where($m);
         return $this;
     }
+    public function diyWhere($str, $aoo = 'AND')
+    {
+        $this->models->diyWhere($str, $aoo);
+        return $this;
+    }
+    /*添加where左括弧*/
+    public function whereLeft()
+    {
+        $this->models->whereLeft();
+        return $this;
+    }
+    /*添加where右括弧*/
+    public function whereRight()
+    {
+        $this->models->whereRight();
+        return $this;
+    }
     /**
     条件筛选 or
     */
@@ -117,10 +138,17 @@ class Models
         $this->models->where($m,'OR');
         return $this;
     }
-
+    // 去除表名
+    public function setNoDbName()
+    {
+        $this->models->setNoDbName();
+        return $this;
+    }
     /*
     设置当前要操作的数据对象的值
     parms $data 1级数组 连续拼接$this->data(['b'=>1])
+    $this->data(['b'=>['SUB',1]])
+    $this->data(['b'=>['ADD',1]])
     */
     public function data($data)
     {
@@ -143,8 +171,9 @@ class Models
     逆序排列
     parms $order  $this->orderDesc('id')               order by id desc
     */
-    public function orderDesc($order)
+    public function orderDesc($order = '')
     {
+        $order = $order?$order:$this->main_key;
         $this->models->orderDesc($order);
         return $this;
     }
@@ -155,8 +184,9 @@ class Models
     parms $order  $this->orderAsc('id')               order by id asc
     parms $order  $this->orderDesc('id')->orderAsc('name')               order by id desc,name asc
     */
-    public function orderAsc($order)
+    public function orderAsc($order = '')
     {
+        $order = $order?$order:$this->main_key;
         $this->models->orderAsc($order);
         return $this;
     }
@@ -174,11 +204,20 @@ class Models
 
     /*
     分页查询
-    parms $page  $this->page(1,10)           limit 0,10
+    parms $page  $this->page(['page'=>1,'pagesize'=>15])           limit 0,10
     */
-    public function page($page, $page2)
+    public function page($page)
     {
-        $this->models->page($page,$page2);
+        if(!$page){
+            return $this;
+        }
+        if(!isset($page['page'])){
+            return $this;
+        }
+        if(!isset($page['pagesize'])){
+            $page['pagesize'] = 15;
+        }
+        $this->models->page($page['page'],$page['pagesize']);
         return $this;
     }
 
@@ -245,10 +284,7 @@ class Models
     */
     public function create()
     {
-        if($this->auto_time){
-            $data[$this->create_at] = TIME;
-            $this->data($data);
-        }
+        $this->autoTime();
         return $this->models->create();
     }
     /**
@@ -258,6 +294,22 @@ class Models
     {
         return $this->models->insertId();
     }
+    // 返回影响行数的函数
+    public function affectedRows()
+    {
+        return $this->models->affectedRows();
+    }
+    private function autoTime($flage = 0)
+    {
+        if($this->auto_time){
+            if($this->models->haveMianKey() || $flage){
+                $data[$this->update_at] = TIME;
+            }else{
+                $data[$this->create_at] = TIME;
+            }
+            $this->data($data);
+        }
+    }
     /*
     更新操作包括更新数据和更新字段方法
     支持where连贯操作
@@ -266,10 +318,7 @@ class Models
     */
     public function save()
     {
-        if($this->auto_time){
-            $data[$this->update_at] = TIME;
-            $this->data($data);
-        }
+        $this->autoTime(1);
         return $this->models->save();
     }
 
@@ -356,6 +405,14 @@ class Models
     }
 
     /**
+     * [setYeild 当返回数据很多的时候开启]
+     */
+    public function setYield()
+    {
+        $this->models->setYield();
+        return $this;
+    }
+    /**
      * [autoCommit 开启事务]
      * @param  boolean $bool [真假值 真为开启自动提交 假为关闭自动提交]
      */
@@ -369,6 +426,17 @@ class Models
     public function commit()
     {
         $this->models->commit();
+    }
+
+    /**
+     * [forUpdate 事务行锁]查询行锁
+     * 必须要有事务 autoCommit  commit
+     * where   字段（必须是索引）
+     */
+    public function forUpdate()
+    {
+        $this->models->forUpdate();
+        return $this;
     }
 
     /*
@@ -402,6 +470,11 @@ class Models
     public function getSql()
     {
         return $this->models->getSql();
+    }
+    public function fetch($func)
+    {
+        $this->models->fetch($func);
+        return $this;
     }
 
     private function error($message)

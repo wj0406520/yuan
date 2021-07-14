@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -15,16 +13,19 @@ namespace core\yuan;
 
 class Controls
 {
+    use Common;
 
     public $dao = NULL;              //模型对象
     public $dao_name = NULL;            //模型名称
     public $controls_name = NULL;       //控制器名称
     protected $route = [];
-    protected $handle = [];        //返回数据
     public $user_id = '';                //用户Id
     public $layout = 'layout.html';     //layout是布局文件
+    public $handle = [];                // 验证的数据 'form'=>$form[]
+    public $form = [];                  // form数组
     private $error = '';
     private $view_data = [];                 //返回到视图上面的数据
+    private $type_data = [];
     private $form_data = [];
     private $temp_data = [];
     private $page = [];
@@ -44,11 +45,31 @@ class Controls
         // print_r($a->data());
         // exit;
         $this->route = Route::data();
-        $this->controls_name = str_replace('/', '\\',  PROJECT.'\\'.APP.'\\'.CONTROLS.'/'.URL_CONTROL);
-        $this->dao_name=str_replace(CONTROLS, DAO, $this->controls_name);
+        $this->controls_name = str_replace('/', '\\',  PROJECT.'\\'.P('APP').'\\'.CONTROLS.'/'.P('URL_CONTROL'));
+        $this->dao_name = str_replace(CONTROLS, DAO, $this->controls_name);
         $this->dao();
         $this->before();
-        $this->handle = Handle::data();
+        $this->handleData();
+        $this->checkToken();
+    }
+    private function checkToken()
+    {
+        $data = IS_POST ? $_POST : $_GET;
+        $token = $this->getSession('_token');
+        if(isset($data['_token']) && $data['_token']!=$token){
+            $this->errorMsg('error_token');
+        }
+        $this->clearSession('_token');
+    }
+
+    private function handleData()
+    {
+        // self::$data_array = IS_POST ? $_POST : $_GET;
+        if(isset($this->handle[P('URL_MODEL')])){
+            $config = $this->handleForm();
+            $data = IS_POST ? $_POST : $_GET;
+            Handle::run($config, $data);
+        }
     }
 
     /**
@@ -73,14 +94,13 @@ class Controls
             $dao = $this->dao_name;
         } else {
             if ($path === '0') {
-                $dao = PROJECT.'\\'.APP.$str.$dao;
+                $dao = PROJECT.'\\'.P('APP').$str.ucfirst($dao);
             } else {
-                $dao = PROJECT .'\\'. $path . $str .$dao;
+                $dao = PROJECT .'\\'. $path . $str .ucfirst($dao);
             }
         }
         $dao .= ucfirst(DAO);
 
-        // print_r($models);exit;
         $file = str_replace('\\', '/',ROOT.$dao.'.php');
 
         if (is_file($file)) {
@@ -108,15 +128,21 @@ class Controls
         // $conf = Conf::getIns();
         // define('IMG_URL', $conf->img_url);
       // print_r(Route::getWeb());exit;
-        if(Route::getWeb()){
-            if(isset($this->view_data['redirect'])){
-                $this->location($this->view_data['redirect']);
-            }
-            $this->view($name);
-        }else{
+        if(!Route::getWeb()){
             WebError::success($this->view_data);
         }
+        if(isset($this->view_data['redirect'])){
+            $this->location($this->view_data['redirect']);
+        }
+        $this->view($name);
     }
+
+    /*
+        $this->chooseData(['select'=>[0=>'aa',2=>'bb'],'id_used'=>['22'=>'lalala','33'=>'iiii']]);
+        $user['checkbox'] = '1,2,3,4';
+        $this->defaultData($user);
+        $this->nameData('wang')->form(['checkbox','id_used']);
+     */
 
     public function chooseData($choose_data)
     {
@@ -134,11 +160,30 @@ class Controls
         return $this;
     }
 
-    public function form($input)
+    public function getForm($name = '')
+    {
+        if(!$name){
+            $name = P('URL_MODEL');
+        }
+        return isset($this->form[$name])?$this->form[$name]:[];
+    }
+    private function handleForm()
+    {
+        $config = $this->handle[P('URL_MODEL')];
+        if(isset($config['form'])){
+            $arr = $this->getForm($config['form']);
+            $config = array_merge($arr,$config);
+            unset($config['form']);
+        }
+        return $config;
+    }
+
+    public function form($input=[])
     {
         if(!is_array($input)){
             return false;
         }
+        $input = array_merge($input,$this->getForm());
         $temp_data = [];
         $choose_data = array_key_exists('choose_data',$this->temp_data)?$this->temp_data['choose_data']:[];
         $name_data = array_key_exists('name_data',$this->temp_data)?$this->temp_data['name_data']:'';
@@ -164,55 +209,50 @@ class Controls
     {
         // instanceof
         // class_exists();
-        $arr = $this->view_data;
-        if ($arr) {
-          foreach ($arr as $key => $value) {
-            $$key = $value;
-          }
-        }
-        $view_dir = VIEWS_DIR;
-        if ($name === '0') {
-            $file = $view_dir . strtolower(URL_CONTROL).'/'.URL_MODEL;
-        } else {
-            $file = $view_dir . $name;
-        }
-        $file .='.html';
+        $view_dir = P('VIEWS_DIR');
+
+        $file = ($name === '0')?strtolower(P('URL_CONTROL')).'/'.P('URL_MODEL'):$name;
+
+        $file = $view_dir.$file.'.html';
 
         if (!is_file($file)) {
             $this->errorMsg('not view file ' . $file);
         }
-        $layout = $view_dir.LAYOUT.'/'.$this->layout;
 
         $views = $this->setView();
 
-        if (!is_file($layout)) {
-            // debug('not view layout '. $layout);
-            require($file);
-        }else{
+        $route_layout = $this->route('layout');
+
+        $layout = !$route_layout?$this->layout:$route_layout;
+        $layout = ROOT.PROJECT.'/'.P('APP').'/'.LAYOUT.'/'.$layout;
+        if($route_layout!==0 && is_file($layout)){
             require($layout);
+        }else{
+            require($file);
         }
     }
 
     private function setView()
     {
-        $views = '\\'.PROJECT.'\\'.APP.'\\'.VIEWS.'\\'.'Views';
+        $views = '\\'.PROJECT.'\\'.P('APP').'\\'.VIEWS.'\\'.'Views';
 
-        if(class_exists($views)){
-            $views = new $views;
-            if(!$views instanceof ViewsAbstract){
-                $this->errorMsg('views not instanceof ViewsAbstract');
-            }
-            if(array_key_exists('name_data',$this->form_data)){
-                unset($this->form_data['name_data']);
-            }
-            $views->data($this->form_data);
-            if($this->page){
-                $views->setPage($this->page);
-            }
-            $views->run();
-            return $views;
+        if(!class_exists($views)){
+            return null;
         }
 
+        $views = new $views;
+        if(!$views instanceof ViewsAbstract){
+            $this->errorMsg('views not instanceof ViewsAbstract');
+        }
+        if(array_key_exists('name_data',$this->form_data)){
+            unset($this->form_data['name_data']);
+        }
+        $views->data($this->form_data);
+        if($this->page){
+            $views->setPage($this->page);
+        }
+        $views->run();
+        return $views;
     }
 
     public function setValue($arr)
@@ -226,9 +266,21 @@ class Controls
         $this->view_data = $data;
         return $this;
     }
-
-    public function page($total, $page = 1, $pagesize = 10)
+    public function getValue($key)
     {
+        $str = '';
+        if(array_key_exists($key,$this->view_data)){
+            $str = $this->view_data[$key];
+        }
+        return $str;
+    }
+
+    public function page($total)
+    {
+
+        $temp = $this->request();
+        $page = $temp['page'];
+        $pagesize = $temp['pagesize'];
 
         $cnt   = ceil($total/$pagesize);  // 得到总页数
         $page  = $page > $cnt ? $cnt : $page;
@@ -260,33 +312,32 @@ class Controls
         $next = ($right > $cnt)?$str.$cnt:$str.$right;
         $last = $str.$cnt;
 
-        // 第一页
-        $this->page['first'] = $first;
-        // 上一页
-        $this->page['previous'] = $previous;
-        // 下一页
-        $this->page['next'] = $next;
-        // 最后一页
-        $this->page['last'] = $last;
+        $this->page['first'] = $first;// 第一页
+        $this->page['previous'] = $previous;// 上一页
+        $this->page['next'] = $next;// 下一页
+        $this->page['last'] = $last;// 最后一页
 
-        // 总条数
-        $this->page['total'] = $total;
-        // 当前页
-        $this->page['page'] = $page;
-        // 每页条数
-        $this->page['size'] = $pagesize;
-        // 总页数
-        $this->page['count'] = $cnt;
+        $this->page['total'] = $total;// 总条数
+        $this->page['page'] = $page;// 当前页
+        $this->page['size'] = $pagesize;// 每页条数
+        $this->page['count'] = $cnt;// 总页数
+        return $this->page;
     }
     /**
      * [redirect 跳转界面]
      * @param  [type] $path [跳转路径]
      * @param  array  $arr  [跳转带参]
      */
-    public function redirect($path)
+    public function redirect($path, $http_arr = [])
     {
+        $temp = count(explode('/', $path));
+        $path = $temp>=2?$path:($temp==1?strtolower(P('URL_CONTROL')).'/'.$path:'');
+        if(!$path){
+            return false;
+        }
         $str = '';
         $arr = Route::getWeb()?$this->view_data:[];
+        $arr = $http_arr?$http_arr:$arr;
         if ($arr) {
           $str = http_build_query($arr);
           $str = '?' . $str;
@@ -295,17 +346,37 @@ class Controls
         if(strpos($url, 'http://') === false && strpos($url, 'https://') === false){
             $str = str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']);
         }
-        $str = $str . $url;
-        // print_r($path . $str);exit;
+        $str = $str .'/'. $url;
+
         $this->view_data['redirect'] = $str;
     }
+
 
     public function location($str)
     {
         header('location:' . $str);
+        exit;
     }
 
+    public function url($str, $data=[])
+    {
+        $url = $this->getUrl($str, $data);
+        echo $url;
+    }
+    public function getUrl($str, $data=[])
+    {
+        $temp = explode('/', $str);
+        $str = isset($temp[1])?$str:strtolower(P('URL_CONTROL')).'/'.$str;
+        if($data){
+            $str .= '?'.http_build_query($data);
+        }
+        return P('PATH').$str;
+    }
 
+    public function path()
+    {
+        echo P('PATH');
+    }
 
     //控制器执行之前
     public function before()
@@ -317,41 +388,10 @@ class Controls
     {
 
     }
-
-    public function errorName($name)
+    // 获取数组中指定元素
+    public function arrayPart($all, $need)
     {
-        $this->error = $name;
-        return $this;
-    }
-    /**
-     * [errorMsg 输出错误信息]
-     * @param  string $data [错误带的参数]
-     */
-    public function errorMsg($data = '')
-    {
-        $error = [
-            'message'=>$data,
-            'name'=>$this->error
-        ];
-        WebError::getError($error);
-    }
-
-    public function route($key)
-    {
-        return Route::data($key);
-    }
-
-    public function getSession($key)
-    {
-        $key = APP.'.'.$key;
-        return isset($_SESSION[$key])?$_SESSION[$key]:'';
-    }
-    public function setSession($arr)
-    {
-        array_walk($arr, function($value,$key){
-            $key = APP.'.'.$key;
-            $_SESSION[$key] = $value;
-        });
+        return array_intersect_key($all, array_flip($need));
     }
 
 }

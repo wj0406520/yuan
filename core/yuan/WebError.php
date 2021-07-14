@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-04-29
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -31,7 +29,8 @@ class WebError
      * @param  integer $type   [判断是不是错误信息]
      * @return [array]          [如果是错误直接输出，否则返回数组]
      */
-    public static function getError($data){
+    public static function getError($data, $func = NULL)
+    {
 
         $re = $data;
     	if(is_string($data)){
@@ -39,11 +38,24 @@ class WebError
     		$re['name'] = '';
     	}
 
-    	// print_r($data);
-    	// exit;
         $error = self::diyError($re['message']);
         $arr['code'] = $error[0];
-        $arr['msg'] = str_replace('%s',$re['name'],$error[1]);
+
+        $temp[] = $error[1];
+        $temp = array_merge($temp,explode(',',$re['name']));
+        $arr['msg'] = call_user_func_array('sprintf',$temp);
+
+        if(isset($_SERVER['REQUEST_URI']) && !IS_CLI){
+            $data = IS_POST ? $_POST : $_GET;
+            $data += [
+                'host_url'=>$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'],
+                'is_post'=>IS_POST
+            ];
+            $arr['data'] = $data;
+        }
+        if($func){
+            $func($arr['msg']);
+        }
 
         self::renderForAjax($arr);
     }
@@ -69,7 +81,8 @@ class WebError
      * [renderForAjax 输出json数据]
      * @param  [array] $arr [输出的数据]
      */
-    private static function renderForAjax($arr){
+    private static function renderForAjax($arr)
+    {
         // header('Access-Control-Allow-Origin:*');
         echo json_encode($arr,JSON_UNESCAPED_UNICODE);
         exit;

@@ -1,83 +1,88 @@
 <?php
-
 namespace app\admin\dao;
 
-use service\models\Plan;
-use service\models\User;
+use core\yuan\Handle;
 
+use service\models\Admin;
+use service\models\User;
+use service\models\DayLogBank;
+use service\models\PayLogMsg;
 
 class IndexDao extends AllDao
 {
 
-	private $user = null;
-	private $plan = null;
+	private $file_list = [];
 
 	public function __construct()
 	{
-		$this->user = User::init()->models();
-		$this->plan = Plan::init()->models();
+		$this->admin = Admin::init()->models();
 	}
 
-	public function getUser()
+	public function ichart()
 	{
-		$data = $this->user->getOne();
-		return $data;
-	}
-	public function getPlan()
-	{
-		$data = $this->plan->select();
-		return $data;
-	}
-
-	public function create()
-	{
-		$data = [
-			'type_id'=>1,
-			'user_id'=>1,
-			'evolve_at'=>TIME
-		];
-
-		$this->plan->data($data)->create();
-		print_r($this->plan->insertId());
-	}
-	public function upda()
-	{
-		$data = [
-			'type_id'=>2,
-			'user_id'=>2,
-			'evolve_at'=>TIME
-		];
-		$where = [
-			'evolve_end'=>255
-		];
-		$num = $this->plan->data($data)->where($where)->save();
-
-		print_r($num);
-	}
-
-	public function getUserPlan()
-	{
-		$where = [
-			// 'id'=>27
-			// 'user_name'=>['like','11']
-		];
-		$where1 = [
-			// 'id'=>27
-			'id'=>['<',3]
-		];
-		$data = $this->user
-		// ->table('admin')
-		->field(['id as user_id','token','user_name',"'sade' as zz"])
-		->where($where)
-		->fetchSql()
-		->where($where1)
-		->join(Plan::class)
-		->where($where1)
-		->field(['id as plan_id','create_at','type_id'])
-		->orderDesc('id')
+		return DayLogBank::init()->models()
+		->field('create_data,sum(money) as money')
+		->group('create_data')
+		->orderAsc('create_data')
+		->limit(30)
 		->select();
+	}
 
-		// print_r($this->user->getSql());
+	public function changePassword()
+	{
+		$data = $this->request();
+		if($data['new_password']!=$data['re_password']){
+			$this->errorMsg('re_password');
+		}
+		$where = [
+			'id'=>self::$user_id,
+			'password'=>$this->password($data['password'])
+		];
+		$data = [
+			'password'=>$this->password($data['new_password'])
+		];
+
+		$re = $this->admin->data($data)->where($where)->save();
+		if(!$re || !$this->admin->affectedRows()){
+			$this->errorMsg('error_password');
+		}
+		return $re;
+	}
+
+	public function getUserAllInfo()
+	{
+		$user = User::init()->models();
+		$data = $user->field('
+				sum(money) as money,
+				sum(all_money) as all_money,
+				sum(bank_money) as bank_money,
+				sum(all_num) as all_num
+			')->where(['type'=>1])->getOne();
+
 		return $data;
 	}
+
+	public function getProportsMoney()
+	{
+		$models = PayLogMsg::init()->models();
+		$re = $models->field("sum(proports_money) as pay_money")
+		->where(['out_transaction_no'=>['<>','']])
+		->getOne();
+		return $re;
+	}
+
+	public function getUserTodayInfo()
+	{
+		$user = User::init()->models();
+
+		$data = $user->field('
+				sum(today_money) as today_money,
+				sum(today_num) as today_num
+			')->where([
+				'last_time'=>['>',strtotime(date('Y-m-d'))]
+			])->where(['type'=>1])->getOne();
+
+		return $data;
+	}
+
 }

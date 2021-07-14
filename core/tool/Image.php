@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -14,27 +12,73 @@ namespace core\tool;
 
 class Image
 {
+    private $make_img = null;
+    private $insert_img = [];
+    private $text_img = [];
     // imageInfo 分析图片的信息
     // return array()
-    public static function imageInfo($image) {
+    private function imageInfo($image) {
         // 判断图片是否存在
         if(!file_exists($image)) {
-            return false;
         }
-
         $info = getimagesize($image);
-
         if($info == false) {
             return false;
         }
-
         // 此时info分析出来,是一个数组
         $img['width'] = $info[0];
         $img['height'] = $info[1];
         $img['ext'] = substr($info['mime'],strpos($info['mime'],'/')+1);
-
         return $img;
     }
+
+    // 设置图片变成圆
+    public static function circular($imgpath) {
+        $ext     = pathinfo($imgpath);
+        $ext['extension'] = isset($ext['extension'])?$ext['extension']:'jpg';
+        $src_img = null;
+        switch ($ext['extension']) {
+            case 'jpg':
+                $src_img = imagecreatefromjpeg($imgpath);
+                break;
+            case 'png':
+                $src_img = imagecreatefrompng($imgpath);
+                break;
+        }
+        $wh  = getimagesize($imgpath);
+        $w   = $wh[0];
+        $h   = $wh[1];
+        $w   = min($w, $h);
+        $h   = $w;
+        $img = imagecreatetruecolor($w, $h);
+        //这一句一定要有
+        imagesavealpha($img, true);
+        //拾取一个完全透明的颜色,最后一个参数127为全透明
+        $bg = imagecolorallocatealpha($img, 0, 0, 0, 127);
+
+        imagefill($img, 0, 0, $bg);
+
+        $r   = $w / 2; //圆半径
+        $y_x = $r; //圆心X坐标
+        $y_y = $r; //圆心Y坐标
+        for ($x = 0; $x < $w; $x++) {
+            for ($y = 0; $y < $h; $y++) {
+                $rgbColor = imagecolorat($src_img, $x, $y);
+                if($ext['extension']=='png'){
+                    $arr = imagecolorsforindex($src_img, $rgbColor);
+                    $rgbColor = imagecolorallocatealpha($img,$arr['red'],$arr['green'],$arr['blue'],$arr['alpha']);
+                }
+                // $rgbColor = 0;
+                if (((($x - $r) * ($x - $r) + ($y - $r) * ($y - $r)) < ($r * $r))) {
+                    imagesetpixel($img, $x, $y, $rgbColor);
+                }
+
+            }
+        }
+        imagedestroy($src_img);
+        return $img;
+    }
+
 
 
     /*
@@ -43,16 +87,15 @@ class Image
         parm String $water 水印小图
         parm String $save,不填则默认替换原始图
     */
-    public static function water($dst,$water,$save=NULL,$pos=2,$alpha=50) {
+    public function water($dst,$water,$save=NULL,$pos=2,$alpha=50) {
         // 先保证2个图片存在
         if(!file_exists($dst) || !file_exists($water)) {
             return false;
         }
 
-
         // 首先保证水印不能比待操作图片还大
-        $dinfo = self::imageInfo($dst);
-        $winfo = self::imageInfo($water);
+        $dinfo = $this->imageInfo($dst);
+        $winfo = $this->imageInfo($water);
 
         if($winfo['height'] > $dinfo['height'] || $winfo['width'] > $dinfo['width']) {
             return false;
@@ -116,17 +159,31 @@ class Image
 
     /**
         thumb 生成缩略图
-        等比例缩放,两边留白
+        $arr = ['height'=>0,'width'=>0]
     **/
-    public static function thumb($dst,$save=NULL,$width=200,$height=200) {
+    public function thumb($dst, $save = NULL,$arr = NULL)
+    {
         // 首先判断待处理的图片存不存在
-        $dinfo = self::imageInfo($dst);
+        $dinfo = $this->imageInfo($dst);
         if($dinfo == false) {
             return false;
         }
+        $height = isset($arr['height'])?$arr['height']:0;
+        $width = isset($arr['width'])?$arr['width']:0;
 
+        if($height==0){
+            $height = (int)($dinfo['height']*$width/$dinfo['width']);
+        }
+
+        if($width==0){
+            $width = (int)($dinfo['width']*$height/$dinfo['height']);
+        }
         // 计算缩放比例
         $calc = min($width/$dinfo['width'], $height/$dinfo['height']);
+
+        if($calc==0){
+            return false;
+        }
 
         // 创建原始图的画布
         $dfunc = 'imagecreatefrom' . $dinfo['ext'];
@@ -142,11 +199,11 @@ class Image
         imagefill($tim,0,0,$white);
 
         // 复制并缩略
-        $dwidth = (int)$dinfo['width']*$calc;
-        $dheight = (int)$dinfo['height']*$calc;
+        $dwidth = (int)($dinfo['width']*$calc);
+        $dheight = (int)($dinfo['height']*$calc);
 
-        $paddingx = (int)($width - $dwidth) / 2;
-        $paddingy = (int)($height - $dheight) / 2;
+        $paddingx = (int)(($width - $dwidth) / 2);
+        $paddingy = (int)(($height - $dheight) / 2);
 
 
         imagecopyresampled($tim,$dim,$paddingx,$paddingy,0,0,$dwidth,$dheight,$dinfo['width'],$dinfo['height']);
@@ -166,7 +223,6 @@ class Image
         return true;
 
     }
-
 
     //写验证码
     /*

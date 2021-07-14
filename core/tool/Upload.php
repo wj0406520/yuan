@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -28,7 +26,6 @@ class Upload
 	 //构造函数， 实例化时直接调用
 
 
-
 	public static function connect($name, $uptype='image', $size=2)
 	{
 
@@ -38,7 +35,7 @@ class Upload
 		}
 		//判断文件是否超出大小
 		if($_FILES[$name]['size'] > $size * 1024 * 1024){
-			self::$error='fileMax';
+			self::$error='file_max';
 			return false;
 		}
 
@@ -47,29 +44,33 @@ class Upload
 		$a=self::$ftype;
 		//判断上传文件类型
 		if(!in_array(strtolower($ext), $a[$uptype])){
-			self::$error='fileType';
+			self::$error='file_type';
 			return false;
 
 		}
 		//上传文件夹
-		$dir = '/'.$uptype.'/'.date('Ym/d').'/';
+		$dir = $uptype.'/'.date('Ym/d').'/';
 		// 上传路径
-		$upload_dir = DATA.$dir;
+		$upload_dir = UPLOAD_DIR.$dir;
+
 		//上传文件名
 		$newname = TIME. mt_rand(100, 999). '.' .$ext;
 		//判断文件夹是否存在
 		if(!is_dir($upload_dir)){
 			mkdir($upload_dir, 0777, true);
+			chmod($upload_dir, 0777);
 		}
 		//移动临时文件到指定文件夹
 		if(!move_uploaded_file($_FILES[$name]['tmp_name'], $upload_dir . $newname)){
 			if(!copy($_FILES[$name]['tmp_name'], $upload_dir . $newname)){
-				self::$error='fileFail';
+				self::$error='file_fail';
 				return false;
 			}
 		}
+
+		$temp = str_replace(DATA, '/', UPLOAD_DIR);
 		//上传文件路径
-		return $dir.$newname;
+		return $temp.$dir.$newname;
 
   }
 

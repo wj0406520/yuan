@@ -1,0 +1,52 @@
+<div class="result-wrap float-left">
+
+    <div class="result-content">
+      <form action="?" method="get">
+          <table class="search-tab" style="">
+            <tbody>
+              <tr>
+
+              </tr>
+            </tbody>
+          </table>
+      </form>
+        <table class="result-tab" width="100%">
+            <tbody>
+              <tr>
+                            <th>ID</th>
+                            <th>名称</th>
+                            <th>省名</th>
+                            <th>等级</th>
+                            <th>排序</th>
+                            <th>显示</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+              </tr>
+
+              <?php
+              if($data = $this->getValue('data')){
+              foreach($data as $val){
+              ?>
+                            <tr data="<?php echo $val['id'];?>">
+                              <td ><?php echo $val['id'];?></td>
+                              <td><?php echo $val['name'];?></td>
+                              <td><?php echo $val['province'];?></td>
+                              <td><?php echo $val['level'];?></td>
+                              <td><?php echo $val['sort'];?></td>
+                              <td><?php $views->eType($val['is_show'],10-$val['is_show'],'is_show');?></td>
+                              <td><?php echo date('Y-m-d H:i:s',$val['create_at']);?></td>
+
+                              <td><a href="<?php $this->url('info');?>?id=<?php echo $val['id']?>&page=<?php echo $this->request('page')?>">修改</a></td>
+                            </tr>
+              <?php }
+              echo "<tr><td colspan='20' class='page-info'>{$views->getPage()}</td></tr>";
+              }else{
+               echo '<tr><td colspan="20">当前没有您要的记录</td></tr>';
+              }?>
+
+        </tbody>
+      </table>
+
+    </div>
+
+   </div>

@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -115,7 +113,9 @@ class UploadSlice
     private function touchDir()
     {
         if(!file_exists($this->filepath)){
-            return mkdir($this->filepath, 0777, true);
+            $temp = mkdir($this->filepath, 0777, true)
+            chmod($this->filepath, 0777);
+            return $temp;
         }
     }
 }

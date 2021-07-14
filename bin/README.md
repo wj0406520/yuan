@@ -80,7 +80,7 @@
 
 - 需要 **`config/url.php`** 的支持
 
-- 需要 **`app//route/route.php`** 的支持
+- 需要 **`app/route/route.php`** 的支持
 
 - 会把 **`route.php`** 中的配置生成对应的 控制器,dao[,html]
 
@@ -96,3 +96,9 @@
 
 - 把数据库中的数据结构转化为**`config/sql.php`**文件
 
+
+#### clear.php [table] 清空某个数据表(带参数)
+
+> 功能介绍
+
+- 清空参数表的数据，并把数据备份

@@ -1,16 +1,25 @@
 <?php
+
 namespace app\api\controls;
-class Login extends All
+
+
+
+class Login extends all
 {
+
+	public $check=0;
+
 	public function indexAction()
 	{
-		// var_dump($this->handle);exit;
-		// $this->errorName('haha')->errorMsg('miss');
-		// echo 111;
-		$arr = $this->route;
-		// print_r($arr);
-		$this->setValue($arr);
-		// $this->redirect('/index/index');
-		$this->display();
+		$post = $this->handle([
+				'code'=>'search',
+			]);
+		$post=$this->models->getOpenid($post['code']);
+		// $info = $this->models->getUser($post);
+		// print_r($post);
+		$this->success($post);
+
 	}
+
 }
+?>

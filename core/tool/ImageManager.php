@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-08-12
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -84,10 +82,18 @@ class ImageManager
 		self::$init->getImageParms();
 		return self::$init;
 	}
+
+
 	private function getImageParms()
 	{
 		$arr = getimagesize($this->path);
 		$type = explode('/',$arr['mime']);
+		if(!$type){
+			echo $this->path . " not image";
+			exit;
+		}
+		// print_r($type);
+		// print_r($this->path);
 		$this->type = $type[1];
 		$this->parms = $arr;
 	}
@@ -315,6 +321,7 @@ class ImageManager
 				$width = min($width,$height);
 				$height = $width;
 			}
+
 			imagecopyresampled($this->img,
 				$value->getParms('img'),
 				$value->getParms('left'),
@@ -328,6 +335,7 @@ class ImageManager
 	}
 	public function textImage()
 	{
+
 		if(!$this->text){
 			return false;
 		}
@@ -351,6 +359,7 @@ class ImageManager
 				$color[1] = hexdec($color[1]);
 				$color[2] = hexdec($color[2]);
 			}
+
 
 			$text_color = imagecolorallocate($this->img, $color[0], $color[1], $color[2]);
 			if($no_font==1){

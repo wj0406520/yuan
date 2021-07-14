@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-06-8
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -69,11 +67,110 @@ class Database
 		}
 
 		$write = "---".date('H:i:s')."---\n".$this->write;
-		$file = BACK_DIR.date('Y_m_d_',TIME).$local['schema'].'_local.sql';
+		$file = $this->dir().$local['schema'].'.local.sql';
 		file_put_contents($file,$write,FILE_APPEND);
 		echo "\nsuccess\n";
 
 	}
+
+	public function dir()
+	{
+		$dir = BACK_DIR.date('Ym');
+		if(!is_dir($dir)){
+			mkdir($dir, 0777, true);
+		}
+		return $dir.'/'.date('Y_m_d_',TIME);
+	}
+
+	public function clear($schema)
+	{
+		$config = $this->config;
+		$table = $config['pref'].$_SERVER['argv'][1];
+		$re = $this->use($schema)->getTable();
+		if(!in_array($table,$re)){
+			echo "base: ".$table." is not table name";
+			exit;
+		}
+
+		$str = '';
+		$this->setValue($table);
+		$data = $this->tableData();
+		$str .= Produce::data($data);
+		$file = $this->dir().$schema.'.clear.sql';
+        file_put_contents($file, $str,FILE_APPEND);
+		$this->table = $table;
+		$this->clearTable();
+		echo "success\n";
+		exit;
+	}
+	public function show($schema)
+	{
+		$num = 24;
+		$limit = 5;
+		$re = $this->use($schema)->getTable();
+		$options = getopt("i:t:d:m");
+		if(isset($options['m'])){
+			$limit = 10;
+		}
+		$pref = $this->config['pref'];
+		$arr = [];
+
+        if(isset($options['d'])){
+            if(in_array($pref.$options['d'],$re)){
+                $this->table = $pref.$options['d'];
+                $re = $this->tableColumn();
+                foreach ($re as $key => $value) {
+                    echo sprintf("% 20s % 20s %s\n",$value['Field'],$value['Type'],$value['Comment']);
+                }
+                exit;
+            }
+            print_r($re);
+            exit;
+        }
+
+		if(isset($options['t'])){
+            if(in_array($pref.$options['t'], $re)){
+    			$where = "";
+    			if(isset($options['i'])){
+    				$where = "where id={$options['i']}";
+    		    	$limit = 1;
+    			}
+    			$table = $pref.$options['t'];
+    	        $list = $this->query("select *,'$table' tab,GREATEST(create_at,update_at) as t from $table $where order by t desc limit $limit");
+    		    $arr = array_merge($list,$arr);
+            }else{
+                $arr = $re;
+            }
+		}else{
+			foreach ($re as $key => $value) {
+				$table = $value;
+		        $list = $this->query("select *,'$table' tab,GREATEST(create_at,update_at) as t from $table order by t desc limit $limit");
+		        if($list){
+			        $arr = array_merge($list,$arr);
+		        }
+			}
+			array_multisort(array_column($arr,'t'),SORT_DESC,$arr);
+		}
+
+		if(!$arr){
+			echo "no data";
+			exit;
+		}
+
+		for ($i=0; $i < $limit; $i++) {
+			if(!isset($arr[$i])){
+				continue;
+			}
+			$line = "\n******************************** ".($i+1).'. '.$arr[$i]['tab']." ********************************\n";
+			unset($arr[$i]['tab']);
+			$arr[$i]['t'] = date('Y-m-d H:i:s',$arr[$i]['t']);
+			echo $line;
+			foreach ($arr[$i] as $key => $value) {
+                echo sprintf("% ".$num."s : %s \n",$key,$value);
+			}
+		}
+	}
+
 
 	public function querySql($sql)
 	{
@@ -121,7 +218,16 @@ class Database
 		$re = $this->use($schema)->getTable();
 		$str = '';
 		$str .= Produce::schema($schema);
-		$file = BACK_DIR.date('Y_m_d_',TIME).$schema.'.sql';
+        $options = getopt("t:m");
+        $pref = $this->config['pref'];
+        if(isset($options['t'])){
+            $temp = $pref.$options['t'];
+            if(in_array($temp,$re)){
+                $re = [$temp];
+                $schema .= '.'.$temp;
+            }
+        }
+		$file = $this->dir().$schema.'.back.sql';
 		foreach ($re as $key => $value) {
 			$this->setValue($value);
 			// print_r($table);
@@ -130,7 +236,7 @@ class Database
 			$str .= Produce::data($data);
 			// exit;
 		}
-		file_put_contents($file, $str);
+		file_put_contents($file, $str,FILE_APPEND);
 		echo "success\n";
 		// print_r($str);
 		exit;
@@ -151,21 +257,34 @@ class Database
 
 	public function renew()
 	{
-		$re = opendir(BACK_DIR);
-
+		$dir = BACK_DIR;
+		$re = opendir($dir);
 		$time = 0;
 		$nd = '';
+        $max = 0;
 		while ($file = readdir($re)) {
 			if($file=="." || $file==".."){
 				continue;
 			}
-			$file = BACK_DIR.$file;
-			$t = filemtime($file);
-			if($t>$time){
-				$time = $t;
-				$nd = $file;
-			}
+            if($max<$file){
+                $max = $file;
+            }
 		}
+        $dir = $dir.$max;
+        closedir($re);
+        $re = opendir($dir);
+        while ($file = readdir($re)) {
+            if(!strpos($file,'back')){
+                continue;
+            }
+            $file = $dir.'/'.$file;
+            $t = filemtime($file);
+            if($t>$time){
+                $time = $t;
+                $nd = $file;
+            }
+        }
+
 		closedir($re);
 		if(!$nd){
 			return false;

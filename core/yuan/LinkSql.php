@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-07
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -20,6 +18,7 @@ class LinkSql
     private $db = NULL;                 // 是引入的mysql对象
     private $pref = NULL;               // 是表前缀
     private $main_key = 'id';           // 是主键
+    private $id = 0;                    // create或者save的id值
 
     private $db_name = NULL;            // 是db_name 操作的字段
 
@@ -27,6 +26,7 @@ class LinkSql
     private $data = [];                 // 是data 操作的字段
 
     private $where = NULL;              // 是where 操作的字段
+    private $for_update = NULL;         // 行锁字段
     private $field = '*';               // 是field 操作的字段
     private $order = NULL;              // 是order 操作的字段
     private $limit = NULL;              // 是page limit 操作的字段
@@ -34,7 +34,9 @@ class LinkSql
     private $join = NULL;               // 是join 操作的字段
     private $having = NULL;             // 是having 操作的字段
     private $comment = NULL;            // 是comment 操作的字段
+    private $yield = NULL;              // 是yield 操作的字段
     private $join_models = NULL;
+    private $where_left = 0;
 
     private $bind_param = [
         'where'=>[],
@@ -68,9 +70,19 @@ class LinkSql
         return $this->join_models;
     }
 
+    public function setYield()
+    {
+        $this->yield = 1;
+        return $this;
+    }
+
     public function getPref()
     {
         return $this->pref;
+    }
+    public function haveMianKey()
+    {
+        return array_key_exists($this->main_key, $this->data) && $this->data[$this->main_key];
     }
     /*
     条件筛选
@@ -82,6 +94,7 @@ class LinkSql
                         noin NOT IN    （不在）IN 查询
                         in    IN 查询
                         finset   find_in_set 查询
+                        mod  MOD  取余数 ['mod',总数,余数]
     return bool
     */
     public function where($m = '', $aoo = 'AND')
@@ -91,17 +104,24 @@ class LinkSql
             return $this;
         }
         if (!is_array($m)) {
-            $this->error('where parms is not array');
+            $this->error('where parms error');
         }
         foreach ($m as $key => $value) {
             $boolean = true;
             $key = $this->db_name . $key;
             // $this->checkField($key, '10002');
             if (is_array($value)) {
-                $str = $value[1];
+                $str = isset($value[1])?$value[1]:'';
                 switch ($value[0]) {
+                    case 'field':
+                        $arr[] =$key . ' = '.$this->db_name.$str;
+                        break;
+                    case 'null':
+                        $arr[] ='isNull('.$key.')';
+                        break;
                     case 'like':
                         $arr[] = $key . ' LIKE ?';
+                        $str = "%".$str."%";
                         break;
                     case 'noin':
                         $boolean = false;
@@ -116,6 +136,8 @@ class LinkSql
                     case 'finset':
                         $arr[] = ' FIND_IN_SET ( ?, ' . $key . ')';
                         break;
+                    case 'mod':
+                        $arr[] = ' MOD ('.$key .', ?)='.$value[2];
                     // <> 不等于
                     default:
                         $arr[] = $key .' '. $value[0] . ' ? ' ;
@@ -131,13 +153,19 @@ class LinkSql
         return $this;
     }
 
+    public function diyWhere($str, $aoo = 'AND')
+    {
+        $arr[] = $str;
+        $this->linkWhere($arr, $aoo);
+        return $this;
+    }
     /*
     指定操作的数据表
     parms $table  数据库表名
     */
     public function table($table)
     {
-        $this->table = ($this->pref&&(strpos($table, $this->pref) === false))?$this->pref.$table:$table;
+        $this->table = (strpos($table, $this->pref) === false)?$this->pref.$table:$table;
         $this->dbName($this->table);
         // $this->checkTable();
         return $this;
@@ -184,6 +212,11 @@ class LinkSql
         return $this;
     }
 
+    public function setNoDbName()
+    {
+        $this->db_name = '';
+        return $this;
+    }
 
     /*
     用于对操作的结果排序
@@ -299,6 +332,14 @@ class LinkSql
         return $this;
     }
 
+    private function newModels($class)
+    {
+        $arr = explode('\\',$class);
+        $re = end($arr);
+        $models = str_replace('/','\\',str_replace(ROOT,'',MODELS_DIR)).$re;
+        return $models;
+    }
+
     private function joinLink($models,$in = 'INNER')
     {
         $pref = $this->getPref();
@@ -306,19 +347,31 @@ class LinkSql
         if(!$link){
             $this->error('no join models');
         }
+        $models = $this->newModels($models);
+        $models_str = $models;
         $models = $models::init();
         $join = $models->table;
         if(strpos($join, $pref) === false){
             $join = $pref . $join;
         }
+        $l = 0;
         $field = $models->getLink($link);
+        if(!$field){
+            $temp = $link::init();
+            $field = $temp->getLink($models_str);
+            $l = 1;
+            !$field && $this->error('link table error');
+        }
+        $jtemp = is_string($field)?$field:$field['join'];
+        $ltemp = isset($field['link'])?$field['link']:$this->main_key;
 
-        $join_field = is_string($field)?$field:$field['join'];
-        $link_field = isset($field['link'])?$field['link']:$this->main_key;
+        $join_field = $l?$ltemp:$jtemp;
+        $link_field = $l?$jtemp:$ltemp;
 
         $this->dbName($join);
 
         $this->join .= ' ' . $in . ' JOIN ' . $join . ' ON ' . $join .'.'.$join_field.'='.$this->table.'.'.$link_field;
+
     }
 
 
@@ -356,11 +409,18 @@ class LinkSql
         // $this->checkTable();
         $data = $this->data;
         if(array_key_exists($this->main_key,$data)){
-            $this->error('create have field id');
+            if($data[$this->main_key]){
+                $rs = $this->save();
+                return $rs;
+            }else{
+                unset($data[$this->main_key]);
+            }
         }
+
         $rs = $this->autoExecute();
         $this->clear();
-        return $rs?$this->db->insertId():false;
+        $this->id = $rs?$this->db->insertId():0;
+        return $this->id;
     }
 
 
@@ -378,8 +438,9 @@ class LinkSql
 
         if(array_key_exists($this->main_key,$data)){
             $crea = $data[$this->main_key];
+            $this->id = $crea;
         }
-        $rs = false;
+
         if($crea){
             unset($this->data[$this->main_key]);
             $rs = $this->where([$this->main_key=>$crea])->autoExecute('update');
@@ -414,7 +475,16 @@ class LinkSql
         if ($mode == 'update') {
             $sql = 'UPDATE ' . $this->table . ' SET ';
             foreach($arr as $k=>$v) {
-                $sql .= $k . "= ?, ";
+                /*新增data的功能*/
+                $str = '';
+                if(is_array($v)){
+                    $str = ($v[0]=='ADD')?' + ':' - ';
+                    $str = $k.$str;
+                    $v = $v[1];
+                }
+                $sql .= $k . " = ".$str."?, ";
+                /*新增data的功能*/
+                // $sql .= $k . "= ?, ";
                 $this->bind_param['update'][] = $v;
             }
             $sql = substr($sql,0,-2);
@@ -449,7 +519,7 @@ class LinkSql
             return $this->count($num);
         }
         $this->linkSql();
-        $arr = $this->db->getAll($this->sql);
+        $arr = $this->getAll($this->sql);
         $this->clear();
         return $arr;
     }
@@ -464,7 +534,7 @@ class LinkSql
     public function diySelect()
     {
         $this->db->setParam($this->bind_param['diy']);
-        $arr = $this->db->getAll($this->diy);
+        $arr = $this->getAll($this->diy);
         return $arr;
     }
     public function setSql($sql)
@@ -480,11 +550,19 @@ class LinkSql
 
     /*
     查询单个数据
+    $type = 1 总量
     */
-    public function getOne()
+    public function getOne($type = 0)
     {
         $this->limit(1);
+        if($this->group && $type == 1){
+            $this->limit = NULL;
+        }
         $this->linkSql();
+        if($this->group && $type == 1){
+            $this->sql = 'SELECT count(*) as a FROM ('.$this->sql.') as t';
+        }
+
         $arr=$this->db->getOne($this->sql);
         $this->clear();
         return $arr;
@@ -505,8 +583,10 @@ class LinkSql
     */
     public function count()
     {
-        $this->field = 'count(*) as a';
-        $arr = $this->getOne();
+        if(!$this->group){
+            $this->field = 'count(*) as a';
+        }
+        $arr = $this->getOne(1);
         $arr = $arr['a'];
         return $arr;
     }
@@ -517,7 +597,6 @@ class LinkSql
     private function linkSql()
     {
         $this->db->setParam($this->bind_param['where']);
-        $this->bind_param = ['where'=>[],'insert'=>[],'update'=>[],'diy'=>[]];
         // $this->checkTable();
         $this->sql = 'SELECT '.
         $this->field. ' FROM ' .
@@ -529,7 +608,8 @@ class LinkSql
         $this->group.
         $this->having.
         $this->order.
-        $this->limit;
+        $this->limit.
+        $this->for_update;
     }
 
     /*
@@ -570,7 +650,7 @@ class LinkSql
         $this->sql = implode(' union ',$arr);
         $this->sql .= str_replace($this->db_name,'',$this->order);
         $this->sql .= $this->limit;
-        $arr = $this->db->getAll($this->sql);
+        $arr = $this->getAll($this->sql);
         $this->clear();
         return $arr;
     }
@@ -580,6 +660,7 @@ class LinkSql
     private function clear()
     {
         $this->dbName($this->table);
+        $this->bind_param = ['where'=>[],'insert'=>[],'update'=>[],'diy'=>[]];
         $this->where = NULL;              // 是where 操作的字段
         $this->field = '*';               // 是field 操作的字段
         $this->order = NULL;              // 是order 操作的字段
@@ -589,16 +670,21 @@ class LinkSql
         $this->join = NULL;               // 是join 操作的字段
         $this->having = NULL;             // 是having 操作的字段
         $this->comment = NULL;            // 是comment 操作的字段
+        $this->for_update = NULL;            // 行锁字段
+        $this->db->fetch(NULL);           // 清空循环函数
     }
 
-    /*
-    获取新增的id
-    */
+    // 获取新增的id
     public function insertId()
     {
-        return $this->db->insertId();
+        return $this->id;
     }
 
+    // 返回影响行数的函数
+    public function affectedRows()
+    {
+        return $this->db->affectedRows();
+    }
 
     /**
      * [autoCommit 开启事务]
@@ -615,7 +701,15 @@ class LinkSql
     {
         return $this->db->commit();
     }
-
+    /**
+     * [forUpdate 事务行锁]查询行锁
+     * 必须要有事务 autoCommit  commit
+     * where   字段（必须是索引）
+     */
+    public function forUpdate()
+    {
+        $this->for_update = ' FOR UPDATE ';
+    }
     /*
     直接执行sql语句
     */
@@ -630,7 +724,7 @@ class LinkSql
     private function fieldToStr($field)
     {
         $arr = $field;
-        // $arr = explode(',', $field);
+        $arr = explode(',', $field);
         $array = [];
         $str = $this->db_name;
         foreach ($arr as $value) {
@@ -653,11 +747,24 @@ class LinkSql
         return implode(',', $array);
     }
 
+    public function fetch($func)
+    {
+        $this->db->fetch($func);
+    }
 
     public function getSql()
     {
         return $this->db->getSql();
     }
+    public function whereLeft()
+    {
+        $this->where_left = 1;
+    }
+    public function whereRight()
+    {
+        $this->where = $this->where.' )';
+    }
+
     /*
     链接where语句
     */
@@ -666,12 +773,16 @@ class LinkSql
         $aoo = ($aoo=='AND')?'AND':'OR';
         $str=implode(' ' . $aoo . ' ', $arr);
 
-        // var_dump($this->where);
+        $left = '';
+        if($this->where_left==1){
+            $left = '(';
+            $this->where_left = 0;
+        }
 
         if (!$this->where) {
-            $this->where = ' WHERE (' . $str . ')';
+            $this->where = ' WHERE '. $left . $str . '';
         }else{
-            $this->where .= ' ' . $aoo . ' ' . $str;
+            $this->where .= ' ' . $aoo .$left. ' ' . $str;
         }
         // print_r($this->where);
         return $this->where;
@@ -682,11 +793,24 @@ class LinkSql
     */
     private function linkString($data)
     {
-        $arr = explode(',',$data);
+        if(is_array($data)){
+            $arr = $data;
+        }else{
+            $arr = explode(',',$data);
+        }
         $this->bind_param['where'] = array_merge($this->bind_param['where'],$arr);
         // $str=implode(',',$arr);
         $str = substr(str_repeat('?,',count($arr)),0,-1);
         return $str;
+    }
+
+    private function getAll($sql)
+    {
+        if($this->yield){
+            $this->yield = NULL;
+            return $this->db->getYieldAll($sql);
+        }
+        return $this->db->getAll($sql);
     }
 
     /*

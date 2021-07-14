@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -44,9 +42,11 @@ class Route
 		return $config;
 	}
 
-	public static function data($key = '', $app = APP)
+	public static function data($key = '', $app = '')
 	{
-
+		if(!$app){
+			$app = P('APP');
+		}
 		if(!isset(self::$data[$app])){
 			self::getFileDate($app);
 		}
@@ -67,9 +67,14 @@ class Route
 			return ;
 		}
         $data = include $file;
-        if(defined('URL_CONTROL')){
-	        $str = strtolower(URL_CONTROL.'.'.URL_MODEL);
-	        self::$data[$app] = isset($data[$str])?$data[$str]:'';
+        if(P('URL_CONTROL')){
+        	$c = strtolower(P('URL_CONTROL'));
+        	$m = P('URL_MODEL');
+        	$s = '';
+        	if(isset($data[$c]) && isset($data[$c][$m])){
+        		$s = $data[$c][$m];
+        	}
+	        self::$data[$app] = $s;
         }else{
         	self::$data[$app] = $data;
         }

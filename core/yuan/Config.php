@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -18,7 +16,8 @@ class Config
 
 	private static $data = [];
 	private static $config = [];
-	private static $config_file = 'config.php';
+	private static $env = [];
+	private static $env_file = '.env';
 	private static $re = null;
 
 	private function __construct()
@@ -28,6 +27,7 @@ class Config
 	public static function get($config)
 	{
 		$data = self::init($config);
+		// var_dump($data);exit;
 		// print_r($config);
 		array_walk($config,function($key) use(&$data){
 			if(!is_array($data) || !isset($data[$key])){
@@ -76,22 +76,24 @@ class Config
 			self::error('config is null');
 		}
 		$file = array_shift($config);
-		if(!isset(self::$data[$file])){
-			// echo 111;
-			if(!isset(self::$config[$file])){
-				self::error($file.' is not config');
-			}
-			$data = self::requireData($file);
-		}else{
-			$data = self::$data[$file];
+
+		if(isset(self::$data[$file])){
+			return self::$data[$file];
 		}
-		return $data;
+		if(!isset(self::$config[$file])){
+			self::error($file.' is not config');
+		}
+		return self::requireData($file);
 	}
 
 	private static function config()
 	{
+		if(!self::$env){
+			self::$env = parse_ini_file(ROOT.self::$env_file,true);
+			self::$data += self::$env;
+		}
 		if(!self::$config){
-			self::$config = require CONFIG.self::$config_file;
+			self::$config = self::$env['config'];
 		}
 	}
 

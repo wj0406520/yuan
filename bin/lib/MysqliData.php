@@ -1,4 +1,13 @@
 <?php
+/*
++----------------------------------------------------------------------
+| time       2018-06-8
++----------------------------------------------------------------------
+| version    4.0.1
++----------------------------------------------------------------------
+| introduce  入口文件
++----------------------------------------------------------------------
+*/
 namespace bin\lib;
 
 use \core\yuan\Config;
@@ -26,7 +35,17 @@ class MysqliData
 		$table = $this->table;
 		$this->database->back($table);
 	}
+	public function show()
+	{
+		$table = $this->table;
+		$this->database->show($table);
+	}
 
+	public function clear()
+	{
+		$schema = $this->table;
+		$this->database->clear($schema);
+	}
 	public function service()
 	{
 		// echo 11;
@@ -42,6 +61,8 @@ class MysqliData
 		// echo 7.1/0.0;
 		// echo 111;
 		$local = Config::get('sql');
+		$config = Config::get('database');
+		$local['schema'] = $config['schema'];
 
 		$this->database->local($local);
 		// echo $sql['schema'];
@@ -119,7 +140,11 @@ class MysqliData
 		$temp = [];
 		if(isset($link[$name])){
 			foreach ($link[$name] as $key => $value) {
-				$models = ucfirst($value['table']);
+				$m = explode('_', $value['table']);
+				$models = '';
+				foreach ($m as $v) {
+					$models .= ucfirst($v);
+				}
 				if(isset($value['table_key'])){
 					$temp[] = "{$models}::class=>['join'=>'{$value['column']}', 'link'=>'{$value['table_key']}']";
 				}else{

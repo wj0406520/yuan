@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-04-29
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -58,7 +56,6 @@ class Error
         // 处理php不执行的错误
         register_shutdown_function(__NAMESPACE__.'\Error::shutdownHandler');
         // echo $a;
-		// Log::write();
 	}
 
 	private static function debug()
@@ -71,13 +68,12 @@ class Error
 		// } else {
 		//     error_reporting(0);
 		// }
-		// Log::write();
 		if(self::$debug){
 			self::backstrace();
 		}else{
 			$str = self::getString();
 			// self::debug($arr);
-			Log::write($str);
+			MoreLog::write($str);
 		}
 	}
 
@@ -94,6 +90,7 @@ class Error
 		self::$line = $line;
 		self::$type = 'error';
 		self::debug();
+		exit;
 	}
 	public static function exceptionHandler($e)
 	{
@@ -102,6 +99,7 @@ class Error
 		self::$line = $e->getLine();
 		self::$type = 'exception';
 		self::debug();
+		exit;
 	}
 	public static function shutdownHandler()
 	{
@@ -112,7 +110,9 @@ class Error
 			self::$line = $arr['line'];
 			self::$type = 'shutdown';
 			self::debug();
+			exit;
 		}
+		MoreLog::writeFile();
 	}
 
 	private static function getString()
@@ -142,6 +142,7 @@ class Error
         $str .= "<tr style='background-color:rgb(240,240,240);'><th style='width: 100px;'>Line</th><td style='color:red'>". self::$line ."</td></tr>";
         $str .= "</table></div>";
         echo $str;
+		MoreLog::write(self::getString());
         exit;
 	}
 

@@ -1,8 +1,6 @@
 <?php
 /*
 +----------------------------------------------------------------------
-| author     王杰
-+----------------------------------------------------------------------
 | time       2018-05-03
 +----------------------------------------------------------------------
 | version    4.0.1
@@ -33,7 +31,11 @@ class Mysql{
 
     private $bind_param = [];
 
+    private $affected_rows = 0;
 
+    private $func = null;
+
+    private $error = null;
     /**
      * [__construct 实例化]
      */
@@ -96,7 +98,7 @@ class Mysql{
         	$this->sql[] = $sql.$str;
         }
 
-        (IS_SQL_LOG || IS_CLI) && $this->log($sql.$str);
+        (IS_SQL_LOG) && $this->log($sql.$str);
 
         //发送sql语句
         if($this->bind_param){
@@ -107,6 +109,8 @@ class Mysql{
         //如果sql失败  写入log文件
         $this->boolean = $rs && $this->boolean;
         if(!$rs){
+            print_r($sql);
+            print_r($this->error);
             $this->error('sql error,check sql');
         }
 
@@ -115,7 +119,7 @@ class Mysql{
 
     private function log($sql)
     {
-    	Log::sql($sql);
+    	MoreLog::sql($sql);
     }
 
     public function setParam($arr)
@@ -127,7 +131,7 @@ class Mysql{
     {
 		$stmt = $this->mysqli->prepare($sql);
 		if(!$stmt){
-            $this->error('prepare error:'.$sql);
+            $this->error('prepare error:'.$this->mysqli->error);
 		}
 		$str = '';
 		$refs = [];
@@ -160,7 +164,9 @@ class Mysql{
         // exit;
 		$str && call_user_func_array([$stmt,'bind_param'],$refs);
 		$re = $stmt->execute();
+        $this->affected_rows = $stmt->affected_rows;
 		$result = $stmt->get_result();
+        $this->error = $stmt->error;
 		$result = $result?$result:$re;
 		return $result;
     }
@@ -207,6 +213,11 @@ class Mysql{
         return $arr;
     }
 
+    public function fetch($func)
+    {
+        $this->func = $func;
+    }
+
     /**
      * [getAll 获取所有数据]
      * @param  [string] $sql [sql语句]
@@ -217,14 +228,37 @@ class Mysql{
         $rs = $this->query($sql);
 
         $list = [];
-
+        $func = $this->func;
         while ($row = $rs->fetch_array(MYSQLI_ASSOC)) {
+            if($func){
+               $func($row);
+            }
             $list[] = $row;
         }
-
+        $this->func = null;
         return $list;
     }
+    /**
+     * [getYieldAll 获取所有数据(当取出的数据量大的情况下使用)]
+     * @param  [string] $sql [sql语句]
+     * @return [object]      [可以循环的对象]
+     */
+    public function getYieldAll($sql)
+    {
+        $rs = $this->query($sql);
 
+        // $list = [];
+        $func = $this->func;
+        while ($row = $rs->fetch_array(MYSQLI_ASSOC)) {
+            if($func){
+               $func($row);
+            }
+            yield $row;
+            // $list[] = $row;
+        }
+        $this->func = null;
+        // return $list;
+    }
     /**
      * [getOne 获取第一条数据]
      * @param  [string] $sql [sql语句]
@@ -240,7 +274,7 @@ class Mysql{
     // 返回影响行数的函数
     public function affectedRows()
     {
-        return $this->mysqli->affected_rows;
+        return $this->affected_rows;
     }
 
     // 返回最新的auto_increment列的自增长的值
@@ -269,6 +303,7 @@ class Mysql{
         }else{
             $this->mysqli->rollback();
         }
+        return $this->boolean;
     }
 
     private function error($message)

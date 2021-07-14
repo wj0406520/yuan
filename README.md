@@ -1,4 +1,4 @@
-## 框架说明
+## 框架说明 4.0.1
 
 ### 想法
 
@@ -21,15 +21,20 @@
 	   |-- dao      存放dao文件
 	   |-- html	    存放视图文件
 	   |-- views	存放表单视图
+	   |-- route	存放路由信息
 |-- bin 存放一些命令
 |-- config 存放一些基础数据
 |-- core  1.初始化要使用函数 2.程序入口
 	|-- yuan  最核心内容
 	|-- tool  相关工具类
-	|-- three 第三方类
 |-- public   存放index.php和js，css等外部访问的文件（项目访问目录）
 	|-- data 是一个软链接，链接到 storage 目录下的上传文件目录
 |-- storage 存放一些文件，日志，缓存，上传文件等
+|-- service 存放一些脚本，模型，第三方扩展，接口
+	|-- bin      脚本
+	|-- models   模型
+	|-- package  扩展文件夹
+	|-- http     接口
 |-- vendor 存放composer内容
 |-- test 存放一些测试文件
 ```

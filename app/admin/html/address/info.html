@@ -1,0 +1,138 @@
+<div class="result-wrap float-left">
+            <div class="result-content">
+                <form method="post" action="<?php echo $this->url('post');?>"   enctype="multipart/form-data" >
+                    <?php $info = $this->getValue('info');
+                          $post = $this->request();
+                    ?>
+                    <table class="insert-tab" width="100%">
+                        <tbody>
+
+                        <tr>
+                            <th width="120"><i class="require-red"></i>省：</th>
+                            <td><?php echo $info['province']?></td>
+                            <th width="120"><i class="require-red"></i>省ID：</th>
+                            <td><?php echo $info['province_id']?></td>
+                        </tr>
+                        <tr>
+                            <th width="120"><i class="require-red"></i>市：</th>
+                            <td><?php echo $info['city']?></td>
+                            <th width="120"><i class="require-red"></i>市ID：</th>
+                            <td><?php echo $info['city_id']?></td>
+                        </tr>
+                        <tr>
+                            <th width="120"><i class="require-red"></i>区：</th>
+                            <td><?php echo $info['district']?></td>
+                            <th width="120"><i class="require-red"></i>区ID：</th>
+                            <td><?php echo $info['district_id']?></td>
+                        </tr>
+                     <tr>
+                            <th width="120"><i class="require-red"></i>经度：</th>
+                            <td id="longitude">
+                                <p><?php echo $info['longitude']?></p>
+                                <input type="hidden" name="longitude" value="">
+                            </td>
+                            <th width="120"><i class="require-red"></i>纬度：</th>
+                            <td id="latitude">
+                                <p><?php echo $info['latitude']?></p>
+                                <input type="hidden" name="latitude" value=""></td>
+                        </tr>
+                        <tr>
+                            <th width="120"><i class="require-red"></i>地名：</th>
+                            <td colspan="10"><?php echo $info['name']?></td>
+                        </tr>
+
+                        <tr>
+                            <th width="120"><i class="require-red"></i>排序：</th>
+                            <td><input type="text" name="sort" value="<?php echo $info['sort']?>" /></td>
+
+                            <th width="120"><i class="require-red"></i>显示：</th>
+                            <td><input type="text" name="is_show" value="<?php echo $info['is_show']?>" />0显示1不显示</td>
+                        </tr>
+
+                        <tr>
+                          <th></th>
+                               <td>
+                                    <input type="hidden" name="id" value="<?php echo $post['id']?>">
+                                    <input type="hidden" name="page" value="<?php echo $post['page']?>">
+                                    <input class="btn btn-primary btn6 mr10" value="提交" type="submit">
+                                    <input class="btn btn6" onclick="history.go(-1)" value="返回" type="button">
+
+                                    <input class="btn btn6" onclick="nextpage()" value="下一页" type="button">
+                                </td>
+                            <th>请输入:</th>
+                            <td><div id="r-result"><input type="text" id="suggestId" size="20" value="百度" style="width:150px;" /></div>
+    <div id="searchResultPanel" style="border:1px solid #C0C0C0;width:150px;height:auto; display:none;"></div></td>
+                            </tr>
+                        </tbody></table>
+                </form>
+            </div>
+            <div id="allmap" style="height: 500px;width: 100%;"></div>
+        </div>
+
+<script charset="utf-8" src="https://map.qq.com/api/gljs?v=1.exp&key=OB4BZ-D4W3U-B7VVO-4PJWW-6TKDJ-WPB77"></script>
+    <script>
+
+    <?php
+        $lon = ($info['longitude']!=0)?$info['longitude']:116.404;
+        $lat = ($info['latitude']!=0)?$info['latitude']:39.915;
+    ?>
+
+    initMap();
+
+        function initMap() {
+            // var position = document.getElementById("allmap");
+
+            var center = new TMap.LatLng(
+                <?php echo $lat;?>,
+                <?php echo $lon;?>
+            );//设置中心点坐标
+            //初始化地图
+            var map = new TMap.Map("allmap", {
+                center: center
+            });
+            //绑定点击事件
+            map.on("click",function(evt){
+                var lat = evt.latLng.getLat().toFixed(6);
+                var lng = evt.latLng.getLng().toFixed(6);
+
+        $('#longitude p').text(lng);
+        $('#latitude p').text(lat);
+
+        $(":input[name='longitude']").val(lng);
+        $(":input[name='latitude']").val(lat);
+                // position.innerHTML = lat + "," + lng;
+            })
+
+
+        var marker = new TMap.MultiMarker({
+            id: "marker-layer", //图层id
+            map: map,
+            styles: { //点标注的相关样式
+                "marker": new TMap.MarkerStyle({
+                    "width": 25,
+                    "height": 35,
+                    "anchor": { x: 16, y: 32 },
+                    "src": "https://mapapi.qq.com/web/lbs/javascriptGL/demo/img/markerDefault.png"
+                })
+            },
+            geometries: [{ //点标注数据数组
+                "id": "demo",
+                "styleId": "marker",
+                "position": center,
+                "properties": {
+                    "title": "marker"
+                }
+            }]
+        });
+            
+        }
+
+    function nextpage(){
+        console.log(1);
+        window.location.href="<?php echo $this->url('info');?>?id=<?php echo $post['id']-1;?>";
+    }
+
+    </script>
+
+
+
